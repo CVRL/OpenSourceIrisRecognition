@@ -1,0 +1,4 @@
+file1 file2
+synthetic1.png synthetic2.png
+synthetic1.png synthetic3.png
+synthetic2.png synthetic3.png
