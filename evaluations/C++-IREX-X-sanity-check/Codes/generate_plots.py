@@ -68,11 +68,7 @@ plt.xscale("log")
 # show the legend
 plt.legend()
 plt.tight_layout()
-<<<<<<< HEAD
 plt.savefig(os.path.join(sys.argv[2], os.path.split(sys.argv[1])[1].split('.')[0] + '_roc.png'))
-=======
-plt.savefig(sys.argv[2])
->>>>>>> 36b83b2f09a1165b4b7f567a494a02e2fab9382e
 plt.close()
 
 plt.figure(figsize=(10, 7))
@@ -103,8 +99,4 @@ plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
 plt.xlabel('Score')
 plt.ylabel('Probability')
 plt.tight_layout()
-<<<<<<< HEAD
 plt.savefig(os.path.join(sys.argv[2], os.path.split(sys.argv[1])[1].split('.')[0] + '_histogram.png'))
-=======
-plt.savefig(sys.argv[3])
->>>>>>> 36b83b2f09a1165b4b7f567a494a02e2fab9382e
