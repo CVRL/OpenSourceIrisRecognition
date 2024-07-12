@@ -5,9 +5,9 @@ sudo apt install unzip cmake cmake-curses-gui
 
 # Get Pytorch Dependency
 if ! test -d "$ROOT/libtorch/"; then
-  wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcpu.zip
-  unzip libtorch-cxx11-abi-shared-with-deps-2.2.0+cpu.zip
-  rm libtorch-cxx11-abi-shared-with-deps-2.2.0+cpu.zip
+  wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-static-with-deps-2.0.0%2Bcpu.zip
+  unzip libtorch-cxx11-abi-static-with-deps-2.0.0+cpu.zip
+  rm libtorch-cxx11-abi-static-with-deps-2.0.0+cpu.zip
 fi
 
 export Torch_DIR="$ROOT/libtorch/"
