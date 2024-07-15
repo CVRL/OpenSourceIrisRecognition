@@ -71,9 +71,9 @@ Here's an overall description of everything that is done by the script file prov
 3. We download and extract the Libtorch library:
 
    ```sh
-   wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.2.0%2Bcpu.zip
-   unzip libtorch-cxx11-abi-shared-with-deps-2.2.0+cpu.zip`
-   rm libtorch-cxx11-abi-shared-with-deps-2.2.0+cpu.zip
+   wget https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-static-with-deps-2.0.0%2Bcpu.zip
+   unzip libtorch-cxx11-abi-static-with-deps-2.0.0+cpu.zip
+   rm libtorch-cxx11-abi-static-with-deps-2.0.0+cpu.zip
    ```
 
 4. We get the OpenCV library, configure and compile it for our use-case:
