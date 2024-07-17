@@ -62,20 +62,16 @@ namespace FRVT_1N {
       string bsif_dir;
       at::Tensor filter;
       vector<int> resolution;
-      // int resolution [2];
       torch::jit::script::Module mask_model;
       torch::jit::script::Module circle_model;
       vector<double> norm_params_mask;
       vector<double> norm_params_circle;
-      // float norm_params_mask [2];
-      // float norm_params_circle[2];
       at::Tensor grid_sample(at::Tensor input, at::Tensor grid, string interp_mode = "bilinear");
 
       void load_from_cfg(map<string, string> &cfg);
       void fix_image(cv::Mat &ret);
-      //         at::Tensor segment(cv::Mat image);
-      map<string, at::Tensor> segment_and_circApprox(cv::Mat image);
-      map<string, at::Tensor> cartToPol(cv::Mat &image, at::Tensor &mask, at::Tensor &pupil_xyr, at::Tensor &iris_xyr);
+      void segment_and_circApprox(cv::Mat image, map<string, at::Tensor>* seg_im);
+      void cartToPol(cv::Mat image, at::Tensor mask, at::Tensor pupil_xyr, at::Tensor iris_xyr, map<string, at::Tensor>* c2p_im);
       at::Tensor extractCode(at::Tensor image_polar);
       double matchCodes(at::Tensor code1, at::Tensor code2, at::Tensor mask1_inp, at::Tensor mask2_inp);
 
@@ -86,19 +82,12 @@ namespace FRVT_1N {
       int maskSize0;
       int maskSize1;
       map<string, string> cfg;
-      // //vector<Irex::DatabaseEntry> templates;
-      // //map<Irex::IrisImage::Label, vector<at::Tensor>>
       vector<PrepDatabaseEntry> templates;
-      // //int idcount = 0;
       void load_cfg(string cfg_path);
       cv::Mat get_cv2_image(const std::shared_ptr<uint8_t> &data, uint16_t width, uint16_t height, bool isRGB);
       bool hasEnding(const string &fullString, const string &ending);
-      // void getLabelCodesMasks(vector<FRVT::Image::IrisLR> labels,  vector<at::Tensor>& codes, vector<at::Tensor>&
-      // masks, vector<uint8_t>& data);
       double
       match(vector<at::Tensor> codes1, vector<at::Tensor> masks1, vector<at::Tensor> codes2, vector<at::Tensor> masks2);
-      // void convert_tensor_to_uint8(const FRVT::Image::IrisLR label, const at::Tensor& code, const at::Tensor& mask,
-      // vector<uint8_t>& vec);
       void convert_uint8_to_tensorvector(
           vector<FRVT::Image::IrisLR> &labels,
           vector<at::Tensor> &codes,
