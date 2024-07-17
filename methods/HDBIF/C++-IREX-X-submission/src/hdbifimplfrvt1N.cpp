@@ -38,6 +38,64 @@ using namespace std::chrono_literals;
 using namespace FRVT;
 using namespace FRVT_1N;
 
+/*
+int global_image_count = 0;
+
+cv::Mat get_image_from_tensor(at::Tensor tensor) {
+    tensor = tensor.detach();
+    tensor = tensor.clamp(0.0, 255.0).to(torch::kU8);
+    int64_t height = tensor.size(0);
+    int64_t width = tensor.size(1);
+    auto img = cv::Mat(height, width, CV_8UC1, tensor.data_ptr());
+    cv::cvtColor(img, img, cv::COLOR_GRAY2BGR, 3);
+    return img;
+}
+
+void save_polar_mask(at::Tensor mask_polar) {
+  cv::Mat mask_rgb_cv2 = get_image_from_tensor(mask_polar);
+  std::stringstream ss;
+  ss << std::this_thread::get_id();
+  cv::imwrite("/hd2/masks_polar/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", mask_rgb_cv2);
+}
+
+void save_polar_image(at::Tensor image_polar) {
+  cv::Mat image_rgb_cv2 = get_image_from_tensor(image_polar);
+  std::stringstream ss;
+  ss << std::this_thread::get_id();
+  cv::imwrite("/hd2/images_polar/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", image_rgb_cv2);
+
+}
+
+void save_mask(at::Tensor mask) {
+  cv::Mat mask_rgb_cv2 = get_image_from_tensor(mask);
+  std::stringstream ss;
+  ss << std::this_thread::get_id();
+  cv::imwrite("/hd2/masks/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", mask_rgb_cv2);
+}
+
+void save_image(cv::Mat irisim, at::Tensor pupil_xyr, at::Tensor iris_xyr) {
+  cv::Mat irisim_rgb;
+  cv::cvtColor(irisim, irisim_rgb, cv::COLOR_GRAY2BGR, 3);
+    
+  int thickness = 2;
+  cv::Scalar pupil_color(255, 0, 0);
+  int px = pupil_xyr[0].item<int>();
+  int py = pupil_xyr[1].item<int>();
+  cv::Point pc(px, py);
+  int pr = pupil_xyr[2].item<int>();
+  cv::circle(irisim_rgb, pc, pr, pupil_color, thickness);
+  cv::Scalar iris_color(0, 0, 255);
+  int ix = iris_xyr[0].item<int>();
+  int iy = iris_xyr[1].item<int>();
+  cv::Point ic(px, py);
+  int ir = iris_xyr[2].item<int>();
+  cv::circle(irisim_rgb, ic, ir, iris_color, thickness);
+  std::stringstream ss;
+  ss << std::this_thread::get_id();
+  cv::imwrite("/hd2/images/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", irisim_rgb);
+}
+*/
+
 HdbifImplFRVT1N::HdbifImplFRVT1N() {
   resolution.push_back(0);
   resolution.push_back(0);
@@ -48,7 +106,8 @@ HdbifImplFRVT1N::HdbifImplFRVT1N() {
   init = false;
   at::set_num_threads(1);
   at::set_num_interop_threads(1);
-  cv::setNumThreads(0);
+  cv::setNumThreads(1);
+  cerr << "New Version" << endl;
 }
 
 HdbifImplFRVT1N::~HdbifImplFRVT1N() {
@@ -223,57 +282,62 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
     cv::Mat irisim = get_cv2_image(iris.data, iris.width, iris.height, isRGB);
 
     this->fix_image(irisim);
-
-    map<string, at::Tensor> seg_im = this->segment_and_circApprox(irisim.clone());
+    
+    cerr << "Before segmentation" << endl;
+    map<string, at::Tensor>* seg_im = new map<string, at::Tensor>;
+    this->segment_and_circApprox(irisim.clone(), seg_im);
 
     if (irisLocations.size() > i){
       if (irisLocations[i].limbusCenterX != 0) {
-          seg_im["iris_xyr"].index({0}) = (float)irisLocations[i].limbusCenterX;
+          (*seg_im)["iris_xyr"].index({0}) = (float)irisLocations[i].limbusCenterX;
       }else{
-        irisLocations[i].limbusCenterX = (uint16_t) seg_im["iris_xyr"][0].item<float>();
+        irisLocations[i].limbusCenterX = (uint16_t) (*seg_im)["iris_xyr"][0].item<float>();
       }
 
       if (irisLocations[i].limbusCenterY != 0) {
-          seg_im["iris_xyr"].index({1}) = (float)irisLocations[i].limbusCenterY;
+          (*seg_im)["iris_xyr"].index({1}) = (float)irisLocations[i].limbusCenterY;
       }else{
-        irisLocations[i].limbusCenterY = (uint16_t) seg_im["iris_xyr"][1].item<float>();
+        irisLocations[i].limbusCenterY = (uint16_t) (*seg_im)["iris_xyr"][1].item<float>();
       }
 
       if (irisLocations[i].limbusRadius != 0) {
-          seg_im["iris_xyr"].index({2}) = (float)irisLocations[i].limbusRadius;
+          (*seg_im)["iris_xyr"].index({2}) = (float)irisLocations[i].limbusRadius;
       }else{
-        irisLocations[i].limbusRadius = (uint16_t) seg_im["iris_xyr"][2].item<float>();
+        irisLocations[i].limbusRadius = (uint16_t) (*seg_im)["iris_xyr"][2].item<float>();
       }
 
       if (irisLocations[i].pupilRadius != 0) {
-          seg_im["pupil_xyr"].index({2}) = (float)irisLocations[i].pupilRadius; 
+          (*seg_im)["pupil_xyr"].index({2}) = (float)irisLocations[i].pupilRadius; 
       }else{
-        irisLocations[i].pupilRadius = (uint16_t) seg_im["pupil_xyr"][2].item<float>();
+        irisLocations[i].pupilRadius = (uint16_t) (*seg_im)["pupil_xyr"][2].item<float>();
       }
     }
+    
+    float alpha = (*seg_im)["pupil_xyr"].index({2}).item<float>() / (*seg_im)["iris_xyr"].index({2}).item<float>();
+    if (alpha <= 0.1 || alpha >= 0.8) {
+      continue;
+    }
 
-    if (seg_im["pupil_xyr"].index({2}).item<float>() < 4) {
+    if ((*seg_im)["pupil_xyr"].index({2}).item<float>() < 12) {
       ////cerr << "The pupil radius is too small." << endl;
       continue;
     }
 
-    if (seg_im["iris_xyr"].index({2}).item<float>() < 12) {
+    if ((*seg_im)["iris_xyr"].index({2}).item<float>() < 16) {
       ////cerr << "The iris radius is too small." << endl;
       continue;
     }
+    cerr << "Before cartToPol" << endl;
 
-    map<string, at::Tensor> c2p_im = this->cartToPol(irisim, seg_im["mask"], seg_im["pupil_xyr"], seg_im["iris_xyr"]);
-    at::Tensor code = this->extractCode(c2p_im["image_polar"].to(torch::kCPU))
-                          .to(torch::kCPU)
+    map<string, at::Tensor>* c2p_im = new map<string, at::Tensor>;
+    this->cartToPol(irisim.clone(), (*seg_im)["mask"].clone().detach(), (*seg_im)["pupil_xyr"].clone().detach(), (*seg_im)["iris_xyr"].clone().detach(), c2p_im);
+    at::Tensor code = this->extractCode((*c2p_im)["image_polar"].clone().detach())
                           .flatten()
                           .contiguous()
+                          .detach()
                           .to(torch::kU8);
-    at::Tensor mask = c2p_im["mask_polar"].to(torch::kCPU).flatten().contiguous().to(torch::kU8);
+    at::Tensor mask = (*c2p_im)["mask_polar"].clone().detach().flatten().contiguous().to(torch::kU8);
 
-    if (mask.sum().item<float>() == 0) {
-      //cerr << "Mask is too small." << endl;
-      continue;
-    }
 
     if (code.sum().item<float>() == 0) {
       //cerr << "Code is all zeroes." << endl;
@@ -282,6 +346,22 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
     
     int codeSize = (codeSize0 * codeSize1 * codeSize2);
     int maskSize = (maskSize0 * maskSize1);
+    
+    //cerr << "Here" << endl;
+    //save_polar_image((*c2p_im)["image_polar"].clone());
+    //cerr << "polar image saved" << endl;
+    //save_polar_mask((*c2p_im)["mask_polar"].clone());
+    //cerr << "polar mask saved" << endl;
+    //save_mask((*seg_im)["mask"].clone());
+    //cerr << "mask saved" << endl;
+    //save_image(irisim.clone(), (*seg_im)["pupil_xyr"].clone(), (*seg_im)["iris_xyr"].clone());
+    //cerr << "image saved" << endl;
+    //global_image_count++;
+    
+    if ((mask.sum().item<float>() / (maskSize * 255)) < 0.10) {
+      //cerr << "Mask is too small." << endl;
+      continue;
+    }
     
     //cerr << codeSize << " " << maskSize << endl;
     
@@ -298,6 +378,9 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
     templ.insert(templ.end(), codeArr, codeArr + codeSize);
     //const uint8_t *maskBegin = reinterpret_cast<const uint8_t *>(maskArr);
     templ.insert(templ.end(), maskArr, maskArr + maskSize);
+    
+    delete seg_im;
+    delete c2p_im;
   }
   
   //auto stop = high_resolution_clock::now();
@@ -913,72 +996,62 @@ void HdbifImplFRVT1N::fix_image(cv::Mat &ret) {
   }
 }
 
-map<string, at::Tensor> HdbifImplFRVT1N::segment_and_circApprox(cv::Mat image) {
+void HdbifImplFRVT1N::segment_and_circApprox(cv::Mat image, map<string, at::Tensor>* seg_im) {
   
   torch::AutoGradMode enable_grad(false);
   c10::InferenceMode guard(true);
 
   int w = image.cols;
   int h = image.rows;
-  image.convertTo(image, CV_32FC3, 1.0f / 255.0f);
+  
   cv::resize(image, image, cv::Size(resolution[0], resolution[1]), 0, 0, 1);
 
   double diagonal = sqrt(w * w + h * h) / 2;
 
-  auto input_tensor = torch::from_blob(image.data, {1, resolution[1], resolution[0], 1}, torch::kCPU);
+  at::Tensor input_tensor = torch::from_blob(image.data, { image.rows, image.cols, 1 }, at::kByte);
+  input_tensor = input_tensor.unsqueeze_(0);
   input_tensor = input_tensor.permute({0, 3, 1, 2});
+  input_tensor = input_tensor.to(torch::kFloat32);
+  input_tensor = input_tensor.mul(1.0/255.0);
 
-  vector<torch::jit::IValue> *inputs = new vector<torch::jit::IValue>;
   // Mask
   at::Tensor mask_input_tensor = ((input_tensor.clone().detach() - norm_params_mask[0]) / norm_params_mask[1]);
-  mask_input_tensor = mask_input_tensor.to(torch::kCPU).to(torch::kFloat32);
-  inputs->push_back(mask_input_tensor);
-  at::Tensor out_tensor = mask_model.forward(*inputs).toTensor();
-  inputs->clear();
-  out_tensor = out_tensor.to(torch::kCPU);
+  vector<torch::jit::IValue> *inputs_mask = new vector<torch::jit::IValue>;
+  inputs_mask->push_back(mask_input_tensor);
+  at::Tensor out_tensor = mask_model.forward(*inputs_mask).toTensor().clone().detach();
+  delete inputs_mask;
+  out_tensor = torch::sigmoid(out_tensor);
+  
   out_tensor = torch::nn::functional::interpolate(
       out_tensor, torch::nn::functional::InterpolateFuncOptions().size(vector<int64_t> {h, w}).mode(torch::kNearest)
   );
   out_tensor = out_tensor.squeeze();
   at::Tensor mask = at::where(out_tensor > 0.5, 255.0, 0.0);
-  mask = mask.to(torch::kFloat32).to(torch::kCPU);
-
-  delete inputs;
 
   // Circle params
   at::Tensor circ_input_tensor = ((input_tensor.clone().detach() - norm_params_circle[0]) / norm_params_circle[1]);
   circ_input_tensor = circ_input_tensor.repeat({1, 3, 1, 1});
   circ_input_tensor = circ_input_tensor.to(torch::kCPU).to(torch::kFloat32);
-
-  inputs = new vector<torch::jit::IValue>;
-  inputs->push_back(circ_input_tensor);
-
-  at::Tensor inp_xyr_t = circle_model.forward(*inputs).toTensor();
-  inputs->clear();
-
+  vector<torch::jit::IValue> *inputs_circle = new vector<torch::jit::IValue>;
+  inputs_circle->push_back(circ_input_tensor);
+  at::Tensor inp_xyr_t = circle_model.forward(*inputs_circle).toTensor();
+  delete inputs_circle;
   inp_xyr_t = inp_xyr_t.to(torch::kCPU);
   at::Tensor inp_xyr = inp_xyr_t.squeeze();
-
   inp_xyr[0] *= w;
   inp_xyr[1] *= h;
   inp_xyr[2] *= 0.8 * diagonal;
   inp_xyr[3] *= w;
   inp_xyr[4] *= h;
   inp_xyr[5] *= diagonal;
-
-  delete inputs;
-
-  map<string, at::Tensor> ret;
-  ret["pupil_xyr"] = inp_xyr.index({Slice(None, 3)});
-  ret["iris_xyr"] = inp_xyr.index({Slice(3, None)});
-  ret["mask"] = mask;
-
-  return ret;
+  
+  (*seg_im)["pupil_xyr"] = inp_xyr.clone().detach().index({Slice(None, 3)});
+  (*seg_im)["iris_xyr"] = inp_xyr.clone().detach().index({Slice(3, None)});
+  (*seg_im)["mask"] = mask.clone().detach();
 }
 
 
-map<string, at::Tensor>
-HdbifImplFRVT1N::cartToPol(cv::Mat &image, at::Tensor &mask, at::Tensor &pupil_xyr, at::Tensor &iris_xyr) {
+void HdbifImplFRVT1N::cartToPol(cv::Mat image, at::Tensor mask, at::Tensor pupil_xyr, at::Tensor iris_xyr, map<string, at::Tensor>* c2p_im) {
 
   torch::AutoGradMode enable_grad(false);
   c10::InferenceMode guard(true);
@@ -1024,14 +1097,12 @@ HdbifImplFRVT1N::cartToPol(cv::Mat &image, at::Tensor &mask, at::Tensor &pupil_x
   at::Tensor grid_sample_mat = at::cat({x_norm.unsqueeze({-1}), y_norm.unsqueeze({-1})}, -1).to(torch::kCPU);
   at::Tensor image_polar = grid_sample(image_tensor, grid_sample_mat, "bilinear");
   image_polar = at::clamp(at::round(image_polar.index({0, 0, Slice(None, None), Slice(None, None)})), 0, 255);
-
+  
+  mask = mask.to(torch::kFloat32).to(torch::kCPU);
   at::Tensor mask_polar = grid_sample(mask, grid_sample_mat, "nearest");
   mask_polar = at::where(mask_polar.index({0, 0, Slice(None, None), Slice(None, None)}) < 127.5, 0, 255);
-  map<string, at::Tensor> ret;
-  ret["image_polar"] = image_polar.to(torch::kU8);
-  ret["mask_polar"] = mask_polar.to(torch::kU8);
-
-  return ret;
+  (*c2p_im)["image_polar"] = image_polar.to(torch::kU8);
+  (*c2p_im)["mask_polar"] = mask_polar.to(torch::kU8);
 }
 
 at::Tensor HdbifImplFRVT1N::extractCode(at::Tensor image_polar) {
@@ -1139,4 +1210,3 @@ double HdbifImplFRVT1N::match(
     return -1.0;
   }
 }
-
