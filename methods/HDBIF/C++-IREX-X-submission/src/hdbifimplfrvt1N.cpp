@@ -107,7 +107,7 @@ HdbifImplFRVT1N::HdbifImplFRVT1N() {
   at::set_num_threads(1);
   at::set_num_interop_threads(1);
   cv::setNumThreads(1);
-  cerr << "New Version" << endl;
+  //cerr << "New Version" << endl;
 }
 
 HdbifImplFRVT1N::~HdbifImplFRVT1N() {
@@ -139,14 +139,14 @@ std::shared_ptr<FRVT_1N::Interface> FRVT_1N::Interface::getImplementation() {
   */
 ReturnStatus HdbifImplFRVT1N::initializeTemplateCreation(const std::string &configDir, FRVT::TemplateRole role) {
   if (init == true) {
-    //cerr << "Already initialized, skipping..." << endl;
+    ////cerr << "Already initialized, skipping..." << endl;
     return ReturnCode::Success;
   }
   
   torch::AutoGradMode enable_grad(false);
   c10::InferenceMode guard(true);
   
-  //cerr << "Changes are made 2." << endl;
+  ////cerr << "Changes are made 2." << endl;
   
   init = true;
 
@@ -160,14 +160,14 @@ ReturnStatus HdbifImplFRVT1N::initializeTemplateCreation(const std::string &conf
     // Deserialize the ScriptModule from a file using torch::jit::load().
     mask_model = torch::jit::load(fine_mask_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
-    ////cerr << "error loading the mask model\n";
+    //////cerr << "error loading the mask model\n";
     return ReturnCode::ConfigError;
   }
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
     circle_model = torch::jit::load(circle_param_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
-    ////cerr << "error loading the circle model\n";
+    //////cerr << "error loading the circle model\n";
     return ReturnCode::ConfigError;
   }
   polar_height = stoi(cfg["polar_height"]);
@@ -273,7 +273,7 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
   torch::AutoGradMode enable_grad(false);
   c10::InferenceMode guard(true);
   
-  //cerr << irises.size() << endl;
+  ////cerr << irises.size() << endl;
 
   for (int i = 0; i < irises.size(); i++) {
     const FRVT::Image &iris = irises[i];
@@ -283,7 +283,7 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
 
     this->fix_image(irisim);
     
-    cerr << "Before segmentation" << endl;
+    //cerr << "Before segmentation" << endl;
     map<string, at::Tensor>* seg_im = new map<string, at::Tensor>;
     this->segment_and_circApprox(irisim.clone(), seg_im);
 
@@ -319,15 +319,15 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
     }
 
     if ((*seg_im)["pupil_xyr"].index({2}).item<float>() < 12) {
-      ////cerr << "The pupil radius is too small." << endl;
+      //////cerr << "The pupil radius is too small." << endl;
       continue;
     }
 
     if ((*seg_im)["iris_xyr"].index({2}).item<float>() < 16) {
-      ////cerr << "The iris radius is too small." << endl;
+      //////cerr << "The iris radius is too small." << endl;
       continue;
     }
-    cerr << "Before cartToPol" << endl;
+    ////cerr << "Before cartToPol" << endl;
 
     map<string, at::Tensor>* c2p_im = new map<string, at::Tensor>;
     this->cartToPol(irisim.clone(), (*seg_im)["mask"].clone().detach(), (*seg_im)["pupil_xyr"].clone().detach(), (*seg_im)["iris_xyr"].clone().detach(), c2p_im);
@@ -340,30 +340,30 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
 
 
     if (code.sum().item<float>() == 0) {
-      //cerr << "Code is all zeroes." << endl;
+      ////cerr << "Code is all zeroes." << endl;
       continue;
     }
     
     int codeSize = (codeSize0 * codeSize1 * codeSize2);
     int maskSize = (maskSize0 * maskSize1);
     
-    //cerr << "Here" << endl;
+    ////cerr << "Here" << endl;
     //save_polar_image((*c2p_im)["image_polar"].clone());
-    //cerr << "polar image saved" << endl;
+    ////cerr << "polar image saved" << endl;
     //save_polar_mask((*c2p_im)["mask_polar"].clone());
-    //cerr << "polar mask saved" << endl;
+    ////cerr << "polar mask saved" << endl;
     //save_mask((*seg_im)["mask"].clone());
-    //cerr << "mask saved" << endl;
+    ////cerr << "mask saved" << endl;
     //save_image(irisim.clone(), (*seg_im)["pupil_xyr"].clone(), (*seg_im)["iris_xyr"].clone());
-    //cerr << "image saved" << endl;
+    ////cerr << "image saved" << endl;
     //global_image_count++;
     
     if ((mask.sum().item<float>() / (maskSize * 255)) < 0.10) {
-      //cerr << "Mask is too small." << endl;
+      ////cerr << "Mask is too small." << endl;
       continue;
     }
     
-    //cerr << codeSize << " " << maskSize << endl;
+    ////cerr << codeSize << " " << maskSize << endl;
     
     vector<uint8_t> codeVec(reinterpret_cast<uint8_t*>(code.data_ptr()), reinterpret_cast<uint8_t*>(code.data_ptr()) + codeSize);
     uint8_t* codeArr = new uint8_t[codeVec.size()];
@@ -461,7 +461,7 @@ ReturnStatus HdbifImplFRVT1N::finalizeEnrollment(
   ofstream edbdest(enrollmentDir + "/" + this->edb, ios::binary);
   ifstream manifestsrc(edbManifestName, ios::binary);
   ofstream manifestdest(enrollmentDir + "/" + this->manifest, ios::binary);
-  //cerr << "Copying edb and manifest to enrollment directory..." << endl;
+  ////cerr << "Copying edb and manifest to enrollment directory..." << endl;
 
   edbdest << edbsrc.rdbuf();
   manifestdest << manifestsrc.rdbuf();
@@ -484,7 +484,7 @@ ReturnStatus HdbifImplFRVT1N::finalizeEnrollment(
   * The read-only top-level directory in which enrollment data was placed.
   */
 ReturnStatus HdbifImplFRVT1N::initializeIdentification(const std::string &configDir, const std::string &enrollmentDir) {
-  ////cerr << "Initializing Identification: "<< endl;
+  //////cerr << "Initializing Identification: "<< endl;
   
   torch::AutoGradMode enable_grad(false);
   c10::InferenceMode guard(true);
@@ -494,13 +494,13 @@ ReturnStatus HdbifImplFRVT1N::initializeIdentification(const std::string &config
 
   ifstream manifestStream(edbManifestName.c_str());
   if (!manifestStream.is_open()) {
-      ////cerr << "Failed to open stream for " << edbManifestName << "." << endl;
+      //////cerr << "Failed to open stream for " << edbManifestName << "." << endl;
       return ReturnStatus(ReturnCode::ConfigError);
   }
 
   ifstream edbStream(edbName, ios::in | ios::binary);
   if (!edbStream.is_open()) {
-      ////cerr << "Failed to open stream for " << edbName << "." << endl;
+      //////cerr << "Failed to open stream for " << edbName << "." << endl;
       return ReturnStatus(ReturnCode::ConfigError);
   }
 
@@ -525,7 +525,7 @@ ReturnStatus HdbifImplFRVT1N::initializeIdentification(const std::string &config
       templates.push_back(templateIris);
   }
   
-  ////cerr << "done." << endl;
+  //////cerr << "done." << endl;
 
   return ReturnStatus(ReturnCode::Success);
 }
@@ -597,7 +597,7 @@ ReturnStatus HdbifImplFRVT1N::identifyTemplate(
   //auto start = high_resolution_clock::now();
   
   if (idTemplate.size() == 0) {
-    //////////cerr << "Template doesn't contain matchable data" << endl;
+    ////////////cerr << "Template doesn't contain matchable data" << endl;
     return ReturnCode::VerifTemplateError;
   }
   //cout << "Identify Template: " << endl;
@@ -744,7 +744,7 @@ ReturnStatus HdbifImplFRVT1N::identifyTemplate(
     }
   }
   if (all_candidates.size() == 0) {
-    //////////cerr << "No candidates found." << endl;
+    ////////////cerr << "No candidates found." << endl;
     return ReturnCode::UnknownError;
   }
 
@@ -924,12 +924,12 @@ HdbifImplFRVT1N::get_cv2_image(const std::shared_ptr<uint8_t> &data, uint16_t wi
 
   cv::Mat cv2im(h, w, isRGB ? CV_8UC3 : CV_8UC1, data.get());
   if (isRGB == true) {
-    //////////cerr << "Getting R channel of the RGB image." << endl;
+    ////////////cerr << "Getting R channel of the RGB image." << endl;
     vector<cv::Mat> channels(3);
     cv::split(cv2im, channels);
     return channels[0];
   } else {
-    //////////cerr << "Getting the grayscale image." << endl;
+    ////////////cerr << "Getting the grayscale image." << endl;
     return cv2im;
   }
 }
@@ -1143,12 +1143,12 @@ void HdbifImplFRVT1N::convert_uint8_to_tensorvector(
   vector<uint8_t> vec_copy = vec;
   int idx = 0;
   if (vec_copy.size() == 0) {
-    ////////////cerr << "No templates found, using zero codes and mask" << endl;
+    //////////////cerr << "No templates found, using zero codes and mask" << endl;
     labels.push_back(FRVT::Image::IrisLR::Unspecified);
     codes.push_back(torch::zeros({codeSize0, codeSize1, codeSize2}, torch::kU8));
     masks.push_back(torch::zeros({maskSize0, maskSize1}, torch::kU8));
   } else {
-    ////////////cerr << "Templates found" << endl;
+    //////////////cerr << "Templates found" << endl;
     while (idx < vec_copy.size()) {
 
       labels.push_back((FRVT::Image::IrisLR) vec_copy[idx]);
