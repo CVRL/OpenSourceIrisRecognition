@@ -12,7 +12,7 @@
 * [Citations](#citations)
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
-* [Other open-source iris recognition repositories](#other)
+* [Other open-source iris recognition-related tools](#other)
 
 <a name="summary"/></a>
 ## Summary
@@ -186,9 +186,8 @@ This repository makes an attempt to list all available open source iris recognit
 **Paper:** A. Boyd, D. Moreira, A. Kuehlkamp, K. Bowyer, A. Czajka, „Human Saliency-Driven Patch-based Matching for Interpretable Post-mortem Iris Recognition,” IEEE Winter Conference on Applications of Computer Vision Workshops (WACVW), 2023 [[IEEE/CVF]](https://openaccess.thecvf.com/content/WACV2023W/XAI4B/papers/Boyd_Human_Saliency-Driven_Patch-Based_Matching_for_Interpretable_Post-Mortem_Iris_Recognition_WACVW_2023_paper.pdf)
 
 
-### Worldcoin Iris Recognition Inference System ###
+### Iris Analysis Toolkit (MITRE) ###
 
-**Source codes:** [[official]](https://github.com/worldcoin/open-iris)
+**Source codes:** [[official]](https://github.com/mitre/iat)
 
-**Blog post:** [[Worldcoin's Iris Recognition Inference System (IRIS)]](https://worldcoin.org/blog/engineering/iris-recognition-inference-system)
 
