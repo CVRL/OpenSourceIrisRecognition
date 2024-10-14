@@ -107,6 +107,21 @@ HdbifImplFRVT1N::HdbifImplFRVT1N() {
   at::set_num_threads(1);
   at::set_num_interop_threads(1);
   cv::setNumThreads(1);
+  avg_bits_by_filter_size = {
+    {5, 25056}, 
+    {7, 24463}, 
+    {9, 23764}, 
+    {11, 23010}, 
+    {13, 22225}, 
+    {15, 21420}, 
+    {17, 20603}, 
+    {19, 19777}, 
+    {21, 18945}, 
+    {27, 16419}, 
+    {33, 13864}, 
+    {39, 11289}
+  };
+
   //cerr << "New Version" << endl;
 }
 
@@ -202,6 +217,8 @@ ReturnStatus HdbifImplFRVT1N::initializeTemplateCreation(const std::string &conf
   norm_params_mask[1] = stod(cfg["norm_std_mask"]);
   norm_params_circle[0] = stod(cfg["norm_mean_circle"]);
   norm_params_circle[1] = stod(cfg["norm_std_circle"]);
+
+  score_norm = stoi(cfg["score_norm"]);
 
   return ReturnCode::Success;
 }
@@ -870,7 +887,6 @@ double HdbifImplFRVT1N::matchCodes(at::Tensor code1, at::Tensor code2, at::Tenso
   code2 = code2.to(torch::kCPU);
   at::Tensor mask1 = mask1_inp.index({Slice(margin, -margin), Slice(None, None)}).to(torch::kCPU);
   at::Tensor mask2 = mask2_inp.index({Slice(margin, -margin), Slice(None, None)}).to(torch::kCPU);
-
   at::Tensor scoreC = at::zeros({max_shift + 1});
   for (int shift = -max_shift; shift <= max_shift; shift += 2) {
     at::Tensor andMasks = at::logical_and(mask1, at::roll(mask2, shift, 1));
@@ -882,12 +898,15 @@ double HdbifImplFRVT1N::matchCodes(at::Tensor code1, at::Tensor code2, at::Tenso
     at::TensorList mask_list_t = at::TensorList(mask_list_v);
     at::Tensor andMasksRep = at::stack(mask_list_t, 0);
     at::Tensor xorCodesMasked = at::logical_and(xorCodes, andMasksRep);
-    float score_results = (at::sum(xorCodesMasked).item<float>() / (at::sum(andMasks).item<float>() * num_filters));
+    float score_results = (at::sum(xorCodesMasked).item<float>() / (at::sum(andMasksRep).item<float>()));
+    if (score_norm == 1) {
+      score_results = 0.5 - (0.5 - score_results) * sqrt(at::sum(andMasks).item<float>() / avg_bits_by_filter_size[filter_size]);
+    }
     scoreC.index({int(max_shift/2)+int(shift/2)}) = score_results;
   }
 
   at::Tensor scoreIndex = at::argmin(scoreC);
-  at::Tensor score = scoreC.index({scoreIndex.item<int>()});
+  float score = scoreC.index({scoreIndex.item<int>()}).item<float>();
   
   int scoreShift = scoreIndex.item<int>() * 2 - max_shift;
   
@@ -901,6 +920,9 @@ double HdbifImplFRVT1N::matchCodes(at::Tensor code1, at::Tensor code2, at::Tenso
   at::Tensor andMasksRepLeft = at::stack(mask_list_t_Left, 0);
   at::Tensor xorCodesMaskedLeft = at::logical_and(xorCodesLeft, andMasksRepLeft);
   float scoreLeft = (at::sum(xorCodesMaskedLeft).item<float>() / (at::sum(andMasksLeft).item<float>() * num_filters));
+  if (score_norm == 1) {
+    scoreLeft = 0.5 - (0.5 - scoreLeft) * sqrt(at::sum(andMasksLeft).item<float>() / avg_bits_by_filter_size[filter_size]);
+  }
   
   at::Tensor andMasksRight = at::logical_and(mask1, at::roll(mask2, scoreShift+1, 1));
   at::Tensor xorCodesRight = at::logical_xor(code1, at::roll(code2, scoreShift+1, 2));
@@ -912,8 +934,11 @@ double HdbifImplFRVT1N::matchCodes(at::Tensor code1, at::Tensor code2, at::Tenso
   at::Tensor andMasksRepRight = at::stack(mask_list_t_Right, 0);
   at::Tensor xorCodesMaskedRight = at::logical_and(xorCodesRight, andMasksRepRight);
   float scoreRight = (at::sum(xorCodesMaskedRight).item<float>() / (at::sum(andMasksRight).item<float>() * num_filters));
+  if (score_norm == 1) {
+    scoreRight = 0.5 - (0.5 - scoreRight) * sqrt(at::sum(andMasksRight).item<float>() / avg_bits_by_filter_size[filter_size]);
+  }
   
-  return min(min(score.item<float>(), scoreLeft), scoreRight);
+  return min(min(score, scoreLeft), scoreRight);
 }
 
 
@@ -956,16 +981,16 @@ at::Tensor HdbifImplFRVT1N::grid_sample(at::Tensor input, at::Tensor grid, strin
   if (interp_mode.compare("nearest") == 0) {
     auto gridsampleoptions = torch::nn::functional::GridSampleFuncOptions()
                                  .mode(torch::kNearest)
-                                 .padding_mode(torch::kZeros)
-                                 .align_corners(false);
+                                 .padding_mode(torch::kBorder)
+                                 .align_corners(true);
     at::Tensor ret =
         torch::nn::functional::grid_sample(input.to(torch::kCPU), newgrid.to(torch::kCPU), gridsampleoptions);
     return ret;
   } else {
     auto gridsampleoptions = torch::nn::functional::GridSampleFuncOptions()
                                  .mode(torch::kBilinear)
-                                 .padding_mode(torch::kZeros)
-                                 .align_corners(false);
+                                 .padding_mode(torch::kBorder)
+                                 .align_corners(true);
     at::Tensor ret =
         torch::nn::functional::grid_sample(input.to(torch::kCPU), newgrid.to(torch::kCPU), gridsampleoptions);
     return ret;
@@ -1085,15 +1110,15 @@ void HdbifImplFRVT1N::cartToPol(cv::Mat image, at::Tensor mask, at::Tensor pupil
       iris_xyr.index({Slice(None, None), 1}).reshape({-1, 1}) +
       at::matmul(iris_xyr.index({Slice(None, None), 2}).reshape({-1, 1}), torch::sin(theta).reshape({1, polar_width}));
 
-  at::Tensor radius = (at::linspace(0, polar_height - 1, polar_height) / polar_height).reshape({-1, 1}).to(torch::kCPU);
+  at::Tensor radius = (at::linspace(1, polar_height, polar_height) / polar_height).reshape({-1, 1}).to(torch::kCPU);
   at::Tensor pxCoords = at::matmul((1 - radius), pxCirclePoints.reshape({-1, 1, polar_width}));
   at::Tensor pyCoords = at::matmul((1 - radius), pyCirclePoints.reshape({-1, 1, polar_width}));
   at::Tensor ixCoords = at::matmul(radius, ixCirclePoints.reshape({-1, 1, polar_width}));
   at::Tensor iyCoords = at::matmul(radius, iyCirclePoints.reshape({-1, 1, polar_width}));
   at::Tensor x = (pxCoords + ixCoords).to(torch::kFloat32).to(torch::kCPU);
-  at::Tensor x_norm = (x / (width - 1)) * 2 - 1;
+  at::Tensor x_norm = ((x - 1) / (width - 1)) * 2 - 1;
   at::Tensor y = (pyCoords + iyCoords).to(torch::kFloat32).to(torch::kCPU);
-  at::Tensor y_norm = (y / (height - 1)) * 2 - 1;
+  at::Tensor y_norm = ((y - 1) / (height - 1)) * 2 - 1;
   at::Tensor grid_sample_mat = at::cat({x_norm.unsqueeze({-1}), y_norm.unsqueeze({-1})}, -1).to(torch::kCPU);
   at::Tensor image_polar = grid_sample(image_tensor, grid_sample_mat, "bilinear");
   image_polar = at::clamp(at::round(image_polar.index({0, 0, Slice(None, None), Slice(None, None)})), 0, 255);

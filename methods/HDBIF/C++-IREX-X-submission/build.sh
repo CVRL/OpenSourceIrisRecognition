@@ -33,13 +33,13 @@ if ! test -d "$ROOT/frvt"; then
   git clone --depth 1 https://github.com/usnistgov/frvt "$ROOT/frvt"
   export FRVT_DIR="$ROOT/frvt"
 else
-  if ! test -d "$ROOT/frvt/1N/build"; then
+  if test -d "$ROOT/frvt/1N/build"; then
     rm -vrf "$ROOT/frvt/1N/build"
   fi
-  if ! test -d "$ROOT/frvt/1N/doc"; then
+  if test -d "$ROOT/frvt/1N/doc"; then
     rm -vrf "$ROOT/frvt/1N/doc"
   fi
-  if ! test -d "$ROOT/frvt/1N/bin"; then
+  if test -d "$ROOT/frvt/1N/bin"; then
     rm -vrf "$ROOT/frvt/1N/bin"
   fi
 fi

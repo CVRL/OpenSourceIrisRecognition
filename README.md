@@ -59,7 +59,11 @@ The normalized iris image is then convolved with the human-driven filters and th
 <img src="assets/hdbif-features.jpg" alt="hdbif-features" width="540"/>
 </div>
 
-During matching, by utilizing the segmentation masks, the HDBIF method only considers overlapping iris regions between two iris templates and calculates the comparison score using fractional Hamming distance.
+During matching, by utilizing the segmentation masks, the HDBIF method only considers overlapping iris regions between two iris templates and calculates the comparison score using fractional Hamming distance. The method utilizes score normalization proposed by Daugman:
+
+$$HD_{norm} = 0.5 - (0.5 * HD_{raw}) * sqrt(n_{bits} / n_{avg})$$
+
+
 
 **Related papers:** 
 - A. Czajka, D. Moreira, K. Bowyer and P. Flynn, "Domain-Specific Human-Inspired Binarized Statistical Image Features for Iris Recognition," IEEE Winter Conference on Applications of Computer Vision (WACV), Waikoloa, HI, USA, pp. 959-967, 2019 [[IEEEXplore]](https://ieeexplore.ieee.org/document/8658238)
