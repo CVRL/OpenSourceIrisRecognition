@@ -3,7 +3,7 @@
 1. Clone the repository.
 2. Download the segmentation models and the filtering kernels from:
 
-   [https://notredame.box.com/s/vxwwtm68th0nvdag6dhqn7u64kf2i2r0](https://notredame.box.com/s/vxwwtm68th0nvdag6dhqn7u64kf2i2r0)
+   [https://notredame.box.com/s/yx1ry1hf04kjbkt30vib2qeccdb4fw0s](https://notredame.box.com/s/yx1ry1hf04kjbkt30vib2qeccdb4fw0s)
 
    and copy them to the `models` and `filters_pt` folders, respectively.
 
