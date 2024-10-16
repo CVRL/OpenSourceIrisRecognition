@@ -2,16 +2,17 @@
 # Segmentation settings
 #######################################################
 mask_model_path: "./models/nestedsharedatrousresunet-006-0.028214-maskIoU-0.938446.pth"
-circle_model_path: "./models/resnet18-027-0.008222-maskIoU-0.967159.pth"
-cuda: False
+circle_model_path: "./models/resnet18-1543-0.047488-maskIoU-0.934494.pth"
+cuda: True
 
 #######################################################
 # Iris coding
 #######################################################
 polar_height: 64
 polar_width: 512
-recog_filter_size: 17
-recog_num_filters: 5
+recog_filter_size: "17"
+recog_num_filters: "5"
 recog_max_shift: 16
 recog_bsif_dir: "./filters_pt/finetuned_bsif_eyetracker_data/"
 threshold_frac_avg_bits: 0
+score_norm: True
