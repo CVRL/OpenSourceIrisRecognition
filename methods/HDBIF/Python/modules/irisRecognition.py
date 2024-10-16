@@ -14,28 +14,25 @@ from modules.network import *
 class irisRecognition(object):
     def __init__(self, cfg):
         # cParsing the config file
-        self.polar_height = cfg["polar_height"]
-        self.polar_width = cfg["polar_width"]
-        self.filter_size = cfg["recog_filter_size"]
-        self.num_filters = cfg["recog_num_filters"]
-        self.max_shift = cfg["recog_max_shift"]
         self.cuda = cfg["cuda"]
-        self.threshold_frac_avg_bits = cfg["threshold_frac_avg_bits"]
         if self.cuda:
             self.device = torch.device('cuda')
         else:
             self.device = torch.device('cpu')
+        self.polar_height = cfg["polar_height"]
+        self.polar_width = cfg["polar_width"]
+        self.filter_sizes = [int(filter_size) for filter_size in cfg["recog_filter_size"].split(',')]
+        self.num_filters_per_size = [int(num_filter) for num_filter in cfg["recog_num_filters"].split(',')]
+        self.total_num_filters = sum(self.num_filters_per_size)
+        self.torch_filters = self.load_filters(cfg["recog_bsif_dir"], self.filter_sizes, self.num_filters_per_size)
+        self.max_shift = cfg["recog_max_shift"]
+        self.score_norm = cfg["score_norm"]
+        self.threshold_frac_avg_bits = cfg["threshold_frac_avg_bits"]
+        
         self.mask_model_path = cfg["mask_model_path"]
         self.circle_model_path = cfg["circle_model_path"]
-        mat_file_path = cfg["recog_bsif_dir"]+'ICAtextureFilters_{0}x{1}_{2}bit.pt'.format(self.filter_size, self.filter_size, self.num_filters)
-        with torch.inference_mode():
-            filter_mat = torch.jit.load(mat_file_path, torch.device('cpu')).ICAtextureFilters.detach().numpy()
-        #filter_mat_scipy = scipy.io.loadmat('../filters/finetuned_bsif_eyetracker_data/'+'ICAtextureFilters_{0}x{1}_{2}bit.mat'.format(self.filter_size, self.filter_size, self.num_filters))['ICAtextureFilters']
-        self.filter_size = filter_mat.shape[0]
-        self.num_filters = filter_mat.shape[2]
-        with torch.inference_mode():
-            self.torch_filter = torch.FloatTensor(filter_mat).to(self.device)
-            self.torch_filter = torch.moveaxis(self.torch_filter.unsqueeze(0), 3, 0).detach().requires_grad_(False)
+        self.morph_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,5))
+        
         
         self.NET_INPUT_SIZE = (320,240)
 
@@ -69,9 +66,24 @@ class irisRecognition(object):
                 Normalize(mean=(0.5,), std=(0.5,))
             ])          
         
-        avg_bits_by_filter_size = {5: 25056, 7: 24463, 9: 23764, 11: 23010, 13: 22225, 15: 21420, 17: 20603, 19: 19777, 21: 18945, 27: 16419, 33: 13864, 39: 11289}
-        self.avg_num_bits = avg_bits_by_filter_size[self.filter_size]
+        self.avg_bits_by_filter_size = {5: 25056, 7: 24463, 9: 23764, 11: 23010, 13: 22225, 15: 21420, 17: 20603, 19: 19777, 21: 18945, 27: 16419, 33: 13864, 39: 11289}
+        self.avg_num_bits = 0
+        for filter_size in self.filter_sizes:
+            self.avg_num_bits += self.avg_bits_by_filter_size[filter_size]
+        self.avg_num_bits /= len(self.filter_sizes)
+        self.fixed_num_bits = 26770 # based on masks statistics from 'VII-Q', 'ND3DIris', 'PostMortem-Iris-NIJ', and 'Q-FIRE'
         self.ISO_RES = (640,480)
+
+    @torch.inference_mode()
+    def load_filters(self, recog_bsif_dir, filter_sizes, num_filters_per_size):
+        torch_filters = []
+        for filter_size, num_filters in zip(filter_sizes, num_filters_per_size):
+            mat_file_path = recog_bsif_dir+'ICAtextureFilters_{0}x{1}_{2}bit.pt'.format(filter_size, filter_size, num_filters)
+            filter_mat = torch.jit.load(mat_file_path, torch.device('cpu')).ICAtextureFilters.detach().numpy()
+            torch_filter = torch.FloatTensor(filter_mat).to(self.device)
+            torch_filter = torch.moveaxis(torch_filter.unsqueeze(0), 3, 0).detach().requires_grad_(False)
+            torch_filters.append(torch_filter.clone().detach())
+        return torch_filters
 
     # converts non-ISO images into ISO dimensions
     def fix_image(self, image):
@@ -95,7 +107,7 @@ class irisRecognition(object):
     
     def segment_and_circApprox(self, image):
         pred = self.segment(image)
-        pupil_xyr, iris_xyr = self.circApprox(pred, image)
+        pupil_xyr, iris_xyr = self.circApprox(image)
         return pred, pupil_xyr, iris_xyr
 
     @torch.inference_mode()
@@ -123,7 +135,7 @@ class irisRecognition(object):
         return imVis
 
     @torch.inference_mode()
-    def circApprox(self,mask=None,image=None):
+    def circApprox(self,image):
 
         w,h = image.size
 
@@ -152,7 +164,7 @@ class irisRecognition(object):
         gridx = ((gridx + 1) / 2 * W - 0.5) / (W - 1) * 2 - 1
         gridy = ((gridy + 1) / 2 * H - 0.5) / (H - 1) * 2 - 1
         newgrid = torch.stack([gridx, gridy], dim=-1)
-        return torch.nn.functional.grid_sample(input, newgrid, mode=interp_mode, align_corners=True)
+        return torch.nn.functional.grid_sample(input, newgrid, mode=interp_mode, align_corners=True, padding_mode='border')
 
     @torch.inference_mode()
     def cartToPol_torch(self, image, mask, pupil_xyr, iris_xyr, interpolation='bilinear'): # 
@@ -235,52 +247,44 @@ class irisRecognition(object):
     def extractCode(self, polar):
         if polar is None:
             return None
-        r = int(np.floor(self.filter_size / 2))
-        polar_t = torch.tensor(polar).float().unsqueeze(0).unsqueeze(0).to(self.device)
-        #polar_t = (polar_t - polar_t.min()) / (polar_t.max() - polar_t.min())
-        padded_polar = nn.functional.pad(polar_t, (r, r, 0, 0), mode='circular')
-        codeContinuous = nn.functional.conv2d(padded_polar, self.torch_filter)
-        codeBinary = torch.where(codeContinuous.squeeze(0) > 0, True, False).cpu().numpy()
-        return codeBinary # The size of the code should be: 7 x (64 - filter_size) x 512 
-    
-    @torch.inference_mode()
-    def extractMultipleCodes(self, polars):
-        polars_t = []
-        for polar in polars:
-            if polar is None:
-                print("One of the polar images is None. Unable to continue...")
-                return None
-            r = int(np.floor(self.filter_size / 2))
+        codeBinaries = []
+        for filter_size, torch_filter in zip(self.filter_sizes, self.torch_filters):
+            r = int(np.floor(filter_size / 2))
             polar_t = torch.tensor(polar).float().unsqueeze(0).unsqueeze(0).to(self.device)
-            polars_t.append(polar_t)
-        polars_t = torch.cat(polars_t, 0)
-        padded_polar = nn.functional.pad(polars_t, (r, r, 0, 0), mode='circular')
-        codesContinuous = nn.functional.conv2d(padded_polar, self.torch_filter)
-        codesBinary = torch.where(codesContinuous > 0, True, False).cpu().numpy()
-        codes = []
-        for i in range(codesBinary.shape[0]):
-            codes.append(codesBinary[i]) # The size of the code should be: 7 x (64 - filter_size) x 512
-        return codes
+            padded_polar = nn.functional.pad(polar_t, (r, r, 0, 0), mode='circular')
+            codeContinuous = nn.functional.conv2d(padded_polar, torch_filter)
+            codeBinary = torch.where(codeContinuous.squeeze(0) > 0, True, False)
+            codeBinaries.append(codeBinary.cpu().numpy())
+        return codeBinaries
 
-    def matchCodes(self, code1, code2, mask1, mask2):
-        r = int(np.floor(self.filter_size / 2))
+
+    @torch.inference_mode()
+    def matchCodes(self, codes1, codes2, mask1, mask2):
         # Cutting off mask to (64-filter_size+1) x 512 and binarizing it.
-        mask1_binary = np.where(mask1[r:-r, :] > 127, True, False)
-        mask2_binary = np.where(mask2[r:-r, :] > 127, True, False)
-        if (np.sum(mask1_binary) <= self.threshold_frac_avg_bits * self.avg_num_bits) or (np.sum(mask2_binary) <= self.threshold_frac_avg_bits * self.avg_num_bits):
-            print("Too small masks")
-            return -1.0, -1.0
         scoreC = []
         for xshift in range(-self.max_shift, self.max_shift+1):
-            andMasks = np.logical_and(mask1_binary, np.roll(mask2_binary, xshift, axis=1))
-            if np.sum(andMasks) == 0:
+            sumXorCodesMasked = 0
+            sumBitsCompared = 0
+            total_num_filters = 0
+            for code1, code2 in zip(codes1, codes2):
+                assert code1.shape == code2.shape # num_filter x filter_size x filter_size
+                num_filters, code_size, _ = code1.shape
+                r = int((mask1.shape[0] - code_size) / 2)
+                mask1_binary = np.where(mask1[r:-r, :] > 127.5, True, False)
+                mask2_binary = np.where(mask2[r:-r, :] > 127.5, True, False)
+                andMasks = np.logical_and(mask1_binary, np.roll(mask2_binary, xshift, axis=1))
+                if np.sum(andMasks) != 0:
+                    xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
+                    xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (num_filters, 1, 1)))
+                    sumXorCodesMasked += np.sum(xorCodesMasked)
+                    sumBitsCompared += (np.sum(andMasks) * num_filters)
+                    total_num_filters += num_filters
+            if sumBitsCompared == 0:
                 scoreC.append(float('inf'))
             else:
-                xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
-                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (self.num_filters, 1, 1)))
-                scoreC.append(np.sum(xorCodesMasked) / (np.sum(andMasks) * self.num_filters))
-            if scoreC[-1] != float('inf'):
-                scoreC[-1] = 0.5 - (0.5 - scoreC[-1]) * math.sqrt( np.sum(andMasks) / self.avg_num_bits )
+                scoreC.append(sumXorCodesMasked / sumBitsCompared)
+                if self.score_norm:
+                    scoreC[-1] = 0.5 - (0.5 - scoreC[-1]) * math.sqrt( sumBitsCompared / (self.avg_num_bits * total_num_filters) )
         scoreC_index = np.argmin(np.array(scoreC))
         scoreC_best = scoreC[scoreC_index]
         if scoreC_best == float('inf'):
@@ -288,12 +292,114 @@ class irisRecognition(object):
             return -1.0, -1.0
                 
         return scoreC_best, scoreC_index - self.max_shift
+    
 
-    def matchCodesEfficient(self, code1, code2, mask1, mask2):
-        r = int(np.floor(self.filter_size / 2))
+    @torch.inference_mode()
+    def matchCodesEfficient(self, codes1, codes2, mask1, mask2):
+        if (np.sum(mask1) <= self.threshold_frac_avg_bits * self.avg_num_bits * 255) or (np.sum(mask2) <= self.threshold_frac_avg_bits * self.avg_num_bits * 255):
+            #print("Too small masks")
+            return float('inf'), -1.0
+        scoreC = []
+        for xshift in range(-self.max_shift, self.max_shift+1, 2):
+            sumXorCodesMasked = 0
+            sumBitsCompared = 0
+            total_num_filters = 0
+            for code1, code2 in zip(codes1, codes2):
+                assert code1.shape == code2.shape # num_filter x filter_size x filter_size
+                num_filters, code_size, _ = code1.shape
+                r = int((mask1.shape[0] - code_size) / 2)
+                # Cutting off mask to (64-filter_size+1) x 512 and binarizing it.
+                mask1_binary = np.where(mask1[r:-r, :] > 127.5, True, False)
+                mask2_binary = np.where(mask2[r:-r, :] > 127.5, True, False)
+                andMasks = np.logical_and(mask1_binary, np.roll(mask2_binary, xshift, axis=1))
+                if np.sum(andMasks) != 0:
+                    xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
+                    xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (num_filters, 1, 1)))
+                    sumXorCodesMasked += np.sum(xorCodesMasked)
+                    sumBitsCompared += (np.sum(andMasks) * num_filters)
+                    total_num_filters += num_filters
+            if sumBitsCompared == 0:
+                scoreC.append(float('inf'))
+            else:
+                scoreC.append(sumXorCodesMasked / sumBitsCompared)
+                if self.score_norm:
+                    scoreC[-1] = 0.5 - (0.5 - scoreC[-1]) * math.sqrt( sumBitsCompared / (self.avg_num_bits * total_num_filters) )
+                    
+        scoreC_index = np.argmin(np.array(scoreC))
+        scoreC_shift = scoreC_index * 2 - self.max_shift
+        scoreC = scoreC[scoreC_index]
+        if scoreC == float('inf'):
+            print("Too small overlap between masks")
+            return float('inf'), -1.0
+        
+        sumXorCodesMasked_left = 0
+        sumBitsCompared_left = 0
+        total_num_filters_left = 0
+        for code1, code2 in zip(codes1, codes2):
+            num_filters, code_size, _ = code1.shape
+            r = int((mask1.shape[0] - code_size) / 2)
+            mask1_binary = np.where(mask1[r:-r, :] > 127.5, True, False)
+            mask2_binary = np.where(mask2[r:-r, :] > 127.5, True, False)
+            andMasks_left = np.logical_and(mask1_binary, np.roll(mask2_binary, scoreC_shift-1, axis=1))
+            if np.sum(andMasks_left) != 0:
+                xorCodes = np.logical_xor(code1, np.roll(code2, scoreC_shift-1, axis=2))
+                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks_left,axis=0), (num_filters, 1, 1)))
+                sumXorCodesMasked_left += np.sum(xorCodesMasked)
+                sumBitsCompared_left += (np.sum(andMasks_left) * num_filters)
+                total_num_filters_left += num_filters
+
+        if sumBitsCompared_left == 0:
+            scoreC_left = float('inf')
+        else:
+            scoreC_left = sumXorCodesMasked_left / sumBitsCompared_left
+            if self.score_norm:
+                scoreC_left = 0.5 - (0.5 - scoreC_left) * math.sqrt( sumBitsCompared_left / (self.avg_num_bits * total_num_filters_left) )
+        
+        sumXorCodesMasked_right = 0
+        sumBitsCompared_right = 0
+        total_num_filters_right = 0
+        for code1, code2 in zip(codes1, codes2):
+            num_filters, code_size, _ = code1.shape
+            r = int((mask1.shape[0] - code_size) / 2)
+            mask1_binary = np.where(mask1[r:-r, :] > 127.5, True, False)
+            mask2_binary = np.where(mask2[r:-r, :] > 127.5, True, False)
+            andMasks_right = np.logical_and(mask1_binary, np.roll(mask2_binary, scoreC_shift+1, axis=1))
+            if np.sum(andMasks_right) != 0:
+                xorCodes = np.logical_xor(code1, np.roll(code2, scoreC_shift+1, axis=2))
+                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks_right,axis=0), (num_filters, 1, 1)))
+                sumXorCodesMasked_right += np.sum(xorCodesMasked)
+                sumBitsCompared_right += (np.sum(andMasks_right) * num_filters)
+                total_num_filters_right += num_filters
+
+        if sumBitsCompared_right == 0:
+            scoreC_right = float('inf')
+        else:
+            scoreC_right = sumXorCodesMasked_right / sumBitsCompared_right
+            if self.score_norm:
+                scoreC_right = 0.5 - (0.5 - scoreC_right) * math.sqrt( sumBitsCompared_right / (self.avg_num_bits * total_num_filters_right) )
+        
+        scoreC_best = min(scoreC, scoreC_left, scoreC_right)
+        if scoreC_best == scoreC_left:
+            scoreC_shift -= 1
+        elif scoreC_best == scoreC_right:
+            scoreC_shift += 1
+        
+        return scoreC_best, scoreC_shift
+
+
+
+
+
+
+##########################################################
+### Adam's extra functions -- no need to correct those ###
+##########################################################
+
+    @torch.inference_mode()
+    def matchCodesEfficientRaw(self, code1, code2, mask1, mask2):
         # Cutting off mask to (64-filter_size+1) x 512 and binarizing it.
-        mask1_binary = np.where(mask1[r:-r, :] > 127, True, False)
-        mask2_binary = np.where(mask2[r:-r, :] > 127, True, False)
+        mask1_binary = np.where(mask1 > 127.5, True, False)
+        mask2_binary = np.where(mask2 > 127.5, True, False)
         if (np.sum(mask1_binary) <= self.threshold_frac_avg_bits * self.avg_num_bits) or (np.sum(mask2_binary) <= self.threshold_frac_avg_bits * self.avg_num_bits):
             print("Too small masks")
             return -1.0, -1.0
@@ -304,10 +410,8 @@ class irisRecognition(object):
                 scoreC.append(float('inf'))
             else:
                 xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
-                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (self.num_filters, 1, 1)))
-                scoreC.append(np.sum(xorCodesMasked) / (np.sum(andMasks) * self.num_filters))
-            if scoreC[-1] != float('inf'):
-                scoreC[-1] = 0.5 - (0.5 - scoreC[-1]) * math.sqrt( np.sum(andMasks) / self.avg_num_bits )
+                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (self.total_num_filters, 1, 1)))
+                scoreC.append(np.sum(xorCodesMasked) / (np.sum(andMasks) * self.total_num_filters))
         scoreC_index = np.argmin(np.array(scoreC))
         scoreC_shift = scoreC_index * 2 - self.max_shift
         scoreC = scoreC[scoreC_index]
@@ -320,16 +424,16 @@ class irisRecognition(object):
             scoreC_left = float('inf')
         else:
             xorCodes_left = np.logical_xor(code1, np.roll(code2, scoreC_shift-1, axis=2))
-            xorCodesMasked_left = np.logical_and(xorCodes_left, np.tile(np.expand_dims(andMasks_left,axis=0), (self.num_filters, 1, 1)))
-            scoreC_left = np.sum(xorCodesMasked_left) / (np.sum(andMasks_left) * self.num_filters)
+            xorCodesMasked_left = np.logical_and(xorCodes_left, np.tile(np.expand_dims(andMasks_left,axis=0), (self.total_num_filters, 1, 1)))
+            scoreC_left = np.sum(xorCodesMasked_left) / (np.sum(andMasks_left) * self.total_num_filters)
         
         andMasks_right = np.logical_and(mask1_binary, np.roll(mask2_binary, scoreC_shift+1, axis=1))
         if np.sum(andMasks_right) == 0:
             scoreC_right = float('inf')
         else:
             xorCodes_right = np.logical_xor(code1, np.roll(code2, scoreC_shift+1, axis=2))
-            xorCodesMasked_right = np.logical_and(xorCodes_right, np.tile(np.expand_dims(andMasks_right,axis=0), (self.num_filters, 1, 1)))
-            scoreC_right = np.sum(xorCodesMasked_right) / (np.sum(andMasks_right) * self.num_filters)
+            xorCodesMasked_right = np.logical_and(xorCodes_right, np.tile(np.expand_dims(andMasks_right,axis=0), (self.total_num_filters, 1, 1)))
+            scoreC_right = np.sum(xorCodesMasked_right) / (np.sum(andMasks_right) * self.total_num_filters)
         
         scoreC_best = min(scoreC, scoreC_left, scoreC_right)
         if scoreC_best == scoreC_left:
@@ -338,3 +442,103 @@ class irisRecognition(object):
             scoreC_shift += 1
         
         return scoreC_best, scoreC_shift
+    
+    @torch.inference_mode()
+    def matchCodesRaw(self, code1, code2, mask1, mask2):
+        # Cutting off mask to (64-filter_size+1) x 512 and binarizing it.
+        mask1_binary = np.where(mask1 > 127.5, True, False)
+        mask2_binary = np.where(mask2 > 127.5, True, False)
+        scoreC = []
+        for xshift in range(-self.max_shift, self.max_shift+1):
+            andMasks = np.logical_and(mask1_binary, np.roll(mask2_binary, xshift, axis=1))
+            if np.sum(andMasks) == 0:
+                scoreC.append(float('inf'))
+            else:
+                xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
+                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (self.total_num_filters, 1, 1)))
+                scoreC.append(np.sum(xorCodesMasked) / (np.sum(andMasks) * self.total_num_filters))
+        scoreC_index = np.argmin(np.array(scoreC))
+        scoreC_best = scoreC[scoreC_index]
+        if scoreC_best == float('inf'):
+            print("Too small overlap between masks")
+            return -1.0, -1.0
+                
+        return scoreC_best, scoreC_index - self.max_shift
+    
+    @torch.inference_mode()
+    def matchCodesKernelSubset(self, code1, code2, mask1, mask2, kernel_selection):
+        # Cutting off mask to (64-filter_size+1) x 512 and binarizing it.
+        mask1_binary = np.where(mask1 > 127.5, True, False)
+        mask2_binary = np.where(mask2 > 127.5, True, False)
+        scoreC = []
+
+        for xshift in range(-self.max_shift, self.max_shift+1):
+            andMasks = np.logical_and(mask1_binary, np.roll(mask2_binary, xshift, axis=1))
+            if np.sum(andMasks) == 0:
+                scoreC.append(float('inf'))
+            else:
+                xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
+                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (self.total_num_filters, 1, 1)))
+
+                _scoreC = []
+                for s in kernel_selection:
+                    _scoreC.append(np.sum(xorCodesMasked[s,:,:]) / (np.sum(andMasks)))
+                
+                scoreC.append(np.mean(np.array(_scoreC)))
+                    
+        scoreC_index = np.argmin(np.array(scoreC))
+        scoreC_best = scoreC[scoreC_index]
+
+        if scoreC_best == float('inf'):
+            print("Too small overlap between masks")
+            return -1.0, -1.0
+                
+            # DEBUG: 
+            # full_path_code = f'temp_images/c-{c:02d}-{xshift+self.max_shift:02d}-{np.sum(xorCodeMasked_MorphOpened/np.sum(andMasks)):0.2f}.png'
+            # Image.fromarray(xorCodeMasked_MorphOpened*255).save(full_path_code)
+
+        return scoreC_best, scoreC_index - self.max_shift
+
+    @torch.inference_mode()
+    def matchCodesKernelWise(self, code1, code2, mask1, mask2):
+        # Cutting off mask to (64-filter_size+1) x 512 and binarizing it.
+        mask1_binary = np.where(mask1 > 127.5, True, False)
+        mask2_binary = np.where(mask2 > 127.5, True, False)
+        scoreC = []
+        scoreM = np.zeros([self.total_num_filters,2*self.max_shift+1],dtype=float)
+        scoreM_Morph = np.zeros([self.total_num_filters,2*self.max_shift+1],dtype=float)
+
+        for xshift in range(-self.max_shift, self.max_shift+1):
+            andMasks = np.logical_and(mask1_binary, np.roll(mask2_binary, xshift, axis=1))
+            if np.sum(andMasks) == 0:
+                scoreC.append(float('inf'))
+            else:
+                xorCodes = np.logical_xor(code1, np.roll(code2, xshift, axis=2))
+                xorCodesMasked = np.logical_and(xorCodes, np.tile(np.expand_dims(andMasks,axis=0), (self.total_num_filters, 1, 1)))
+                scoreC.append(np.sum(xorCodesMasked) / (np.sum(andMasks) * self.total_num_filters))
+
+                for c in range(self.total_num_filters):
+                    scoreM[c,xshift+self.max_shift] = np.sum(xorCodesMasked[c,:,:]/np.sum(andMasks))
+
+                    xorCodeMasked_MorphOpened = cv2.morphologyEx(np.array(xorCodesMasked[c,:,:],dtype=np.uint8), cv2.MORPH_OPEN, self.morph_kernel)
+                    scoreM_Morph[c,xshift+self.max_shift] = np.sum(xorCodeMasked_MorphOpened/np.sum(andMasks))
+                    
+                    # DEBUG: 
+                    # full_path_code = f'temp_images/c-{c:02d}-{xshift+self.max_shift:02d}-{np.sum(xorCodeMasked_MorphOpened/np.sum(andMasks)):0.2f}.png'
+                    # Image.fromarray(xorCodeMasked_MorphOpened*255).save(full_path_code)
+
+        # raw / not-normalized / stadnard score
+        scoreC_index = np.argmin(np.array(scoreC))
+        scoreC_best = scoreC[scoreC_index]
+
+        if scoreC_best == float('inf'):
+            print("Too small overlap between masks")
+            return -1.0, -1.0, -1.0, -1.0
+        
+        scoreM_best = np.min(scoreM,axis=1)
+        scoreM_index = np.argmin(np.array(scoreM),axis=1)
+
+        scoreM_Morph_best = np.min(scoreM_Morph,axis=1)
+        scoreM_Morph_index = np.argmin(np.array(scoreM),axis=1)
+
+        return scoreC_best, scoreC_index - self.max_shift, scoreM_best, scoreM_index - self.max_shift, scoreM_Morph_best, scoreM_Morph_index - self.max_shift
