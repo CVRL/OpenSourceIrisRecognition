@@ -61,7 +61,7 @@ The normalized iris image is then convolved with the human-driven filters and th
 
 During matching, by utilizing the segmentation masks, the HDBIF method only considers overlapping iris regions between two iris templates and calculates the comparison score using fractional Hamming distance. The method utilizes score normalization proposed by Daugman:
 
-$$HD_{norm} = 0.5 - (0.5 * HD_{raw}) * \sqrt{n_{bits} / n_{typical}}$$
+$$HD_{norm} = 0.5 - (0.5 * HD_{raw}) * \sqrt{\frac{n_{bits}}{n_{typical}}}$$
 
 where $HD_{norm}$ is the normalized score, $HD_{raw}$ is the raw score, $n_{bits}$ is the number of bits compared, and $n_{typical}$ is the usual number of bits compared when comparing two iris images. To find $n_{typical}$, we combine the public datasets available from Notre Dame and calculate the average number of bits overlapping between polar-normalized masks.
 
