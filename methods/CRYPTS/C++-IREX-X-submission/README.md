@@ -143,10 +143,10 @@ Here's an overall description of everything that is done by the script file prov
 
 10. We set the library version number for the FRVT validation routine:
 
-   ```sh
-   mkdir "$ROOT/frvt/1N/doc" || true
-   echo "$FRVT_VER" > "$ROOT/frvt/1N/doc/version.txt"
-   ```
+     ```sh
+     mkdir "$ROOT/frvt/1N/doc" || true
+     echo "$FRVT_VER" > "$ROOT/frvt/1N/doc/version.txt"
+     ```
 
 11. We copy the library and the required dependencies to the FRVT repo.
 
