@@ -8,6 +8,7 @@
 * [Brief description of the methods offered](#methods)
 	* [Human-Driven Binary Image Features (HDBIF)](#methods-HDBIF)
 	* [Human-Interpretable Features (CRYPTS)](#methods-CRYPTS)
+ 	* [ConvNeXt-tiny trained with Batch-hard Triplet Mining (TripletNN)](#methods-TripletNN)
 	* [Segmentation](#methods-SEGM)
 * [Citations](#citations)
 * [Acknowledgments](#acknowledgments)
