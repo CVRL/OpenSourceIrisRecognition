@@ -83,8 +83,9 @@ The crypt masks found serve as the iris template in this method. The crypt masks
 
 **Related paper:** J. Chen, F. Shen, D. Z. Chen and P. J. Flynn, "Iris Recognition Based on Human-Interpretable Features," in IEEE Transactions on Information Forensics and Security, vol. 11, no. 7, pp. 1476-1485, 2016 [[IEEEXplore]](https://ieeexplore.ieee.org/document/7422104)
 
-<a name="methods-TripletNN"/></a>
 
+
+<a name="methods-TripletNN"/></a>
 ### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletNN)
 
 The encoding model used here is the smallest version of ConvNeXt (dubbed ConvNeXt-tiny) trained with batch-hard triplet mining loss on polar-normalized iris images. We use ConvNeXt-tiny due to timing constraints enforced by NIST.
