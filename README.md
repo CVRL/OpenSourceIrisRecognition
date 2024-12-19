@@ -104,6 +104,7 @@ Batch-hard triplet mining is a strategy that focuses on the most challenging neg
 </div>
 [Figure Source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
 
+
 **Related paper:**
 - Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie. "A ConvNet for the 2020s." In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition, pp. 11976-11986. 2022.
 - Florian Schroff, Dmitry Kalenichenko, and James Philbin. "FaceNet: A Unified Embedding for Face Recognition and Clustering." In Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 815-823. 2015.
