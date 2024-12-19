@@ -114,24 +114,26 @@ Here's an overall description of everything that is done by the script file prov
    cp "$ROOT/frvt/common/src/include/frvt_structs.h" "$ROOT/NIST-IREX-X/crypts/include/"
    ```
 
-   Our code utilizes the OR-Tools library. Now, we clone the OR-Tools repo.
+7. Our code utilizes the OR-Tools library. Download the pre-compiled OR-Tools binaries.
 
    ```
-   git clone --depth 1 --branch v9.2 https://github.com/google/or-tools
+   wget https://github.com/google/or-tools/releases/download/v9.11/or-tools_amd64_ubuntu-20.04_cpp_v9.11.4210.tar.gz
+   tar xzvf or-tools_amd64_ubuntu-20.04_cpp_v9.11.4210.tar.gz
+   mv -v or-tools_x86_64_Ubuntu-20.04_cpp_v9.11.4210 or-tools
+   export ORTOOLS_ROOT="$ROOT/or-tools"
    ```
 
-7. We configure and compile the CRYPTS library:
+8. We configure and compile the CRYPTS library:
 
    ```sh
    mkdir build && cd build
-   cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch/" -DOpenCV_DIR="$ROOT/opencv/build" -DBUILD_TESTING=OFF \
-   -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS:BOOL=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_SCIP=OFF ..
+   cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch/" -DOpenCV_DIR="$ROOT/opencv/build/" -DORTOOLS_ROOT="$ROOT/or-tools/" -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ..
    cmake --build . --config Release
    ```
 
    This will compile our library, now we have to run the validation routine using the library file generated.
 
-8. Next, we extract the validation images:
+9. Next, we extract the validation images:
 
    ```sh
    cd "$ROOT/frvt/common/images/iris"
@@ -139,32 +141,33 @@ Here's an overall description of everything that is done by the script file prov
    tar xvf NIST_validation_images.tar
    ```
 
-9. We set the library version number for the FRVT validation routine:
+10. We set the library version number for the FRVT validation routine:
 
    ```sh
    mkdir "$ROOT/frvt/1N/doc" || true
    echo "$FRVT_VER" > "$ROOT/frvt/1N/doc/version.txt"
    ```
 
-10. We copy the library and the required dependencies to the FRVT repo.
+11. We copy the library and the required dependencies to the FRVT repo.
 
     ```sh
     mkdir "$ROOT/frvt/1N/lib"
     cp "$ROOT/build/libfrvt_1N_nd_cvrl_crypts_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
     cp "$ROOT/build/lib/"* "$ROOT/frvt/1N/lib/"
-    cp "$ROOT/libtorch/lib/"lib* "$ROOT/frvt/1N/lib/"
+    cp "$ROOT/libtorch/lib/"* "$ROOT/frvt/1N/lib/"
+    cp "$ROOT/or-tools/lib/"* "$ROOT/frvt/1N/lib/"
     cp "$ROOT/opencv/build/lib/"libopencv_imgproc* "$ROOT/frvt/1N/lib/"
     cp "$ROOT/opencv/build/lib/"libopencv_imgcodecs* "$ROOT/frvt/1N/lib/"
-    cp "$ROOT/opencv/build/lib/"libopencv_core" "$ROOT/frvt/1N/lib/"
+    cp "$ROOT/opencv/build/lib/"libopencv_core* "$ROOT/frvt/1N/lib/"
     ```
 
-11. We copy the config directory into the FRVT repo:
+12. We copy the config directory into the FRVT repo:
 
     ```sh
     cp -r "$ROOT/config" "$ROOT/frvt/1N/"
     ```
 
-12. Finally, we move to the FRVT 1N directory and run the validation routine:
+13. Finally, we move to the FRVT 1N directory and run the validation routine:
 
     ```sh
     cd "$ROOT/frvt/1N"
