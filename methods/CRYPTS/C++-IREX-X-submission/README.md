@@ -2,10 +2,10 @@
 
 We recommend to set up an environment with [Ubuntu 20.04.3 as provided by NIST](https://nigos.nist.gov/evaluations/ubuntu-20.04.3-live-server-amd64.iso). It is best if a clean installation of the given ISO is used. The IREX validation routine has a check for the OS version and it will not run unless you are working on Ubuntu 20.04.3. However, if you absolutely have to compile it with any other version of Ubuntu, you can circumvent this OS version check by using:
 
-```sh
-export FRVT_OS_VER=<your_ubuntu_version>
-# export FRVT_OS_VER=20.04.6 if your ubuntu version is 20.04.6
-```
+  ```sh
+  export FRVT_OS_VER=<your_ubuntu_version>
+  # export FRVT_OS_VER=20.04.6 if your ubuntu version is 20.04.6
+  ```
  
 For example, if you are using Ubuntu 20.04.6, you can set the FRVT_OS_VER to your Ubuntu version 20.04.6. While we have compiled the library in Ubuntu 20.04.6 and found it to work fine on our test bench run on Ubuntu 20.04.3, we do not recommend doing this.
 
@@ -15,10 +15,10 @@ The steps for building the libraries using our provided script file are the same
 
 IREX requires any library submitted to have a version number for each submission. This version number must be saved in a '.txt' file and saved into the 'doc' directory inside the validation routine folder. This is done by our script file but we have to set this library version number by:
 
-```sh
-export FRVT_VER=<version_number>
-# export FRVT_VER=000 for your first submission to NIST
-```
+  ```sh
+  export FRVT_VER=<version_number>
+  # export FRVT_VER=000 for your first submission to NIST
+  ```
 
 This library version is the current version for your submission, e.g. if you are submitting it for the first time then, you should set the version number as 000 and therefore, you should run 'export FRVT_VER=000'. 
 
@@ -26,25 +26,25 @@ To run our segmentation models we need (a) the model weights and (b) to set the 
 
 Extract the downloaded zip file and copy the 'config' folder into the corresponding library source directory you want to compile ('C++-IREX-X-submission').
 
-```sh
-wget -O config.zip https://notredame.box.com/shared/static/lo8ilx79rxc3us5sfnf1e3fqjwc3zq2v.zip
-unzip config.zip
-cp -r config C++-IREX-X-submission/
-rm -r config.zip config
-```
+  ```sh
+  wget -O config.zip https://notredame.box.com/shared/static/lo8ilx79rxc3us5sfnf1e3fqjwc3zq2v.zip
+  unzip config.zip
+  cp -r config C++-IREX-X-submission/
+  rm -r config.zip config
+  ```
 
 Next, we have to extract the IREX validation images. To do so, we need the password for the encrypted compressed file. Please send an email to irex@nist.gov for the password. Set the password to the 'PASSWORD' variable by using:
 
-```sh
-export PASSWORD=<password_from_nist>
-```
+  ```sh
+  export PASSWORD=<password_from_nist>
+  ```
 
 Now, you can build each shared library file by navigating to the appropriate library source directory and running the corresponding script:
 
-```sh
-# cd library_source_crypts
-./build.sh
-```
+  ```sh
+  # cd library_source_crypts
+  ./build.sh
+  ```
 
 The script file also runs the IREX validation routine to generate the package that must be submitted to NIST. From our experience, the IREX validation routine requires a good amount of RAM as it loads all the templates into RAM before matching.
 
