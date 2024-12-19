@@ -65,8 +65,6 @@ $$HD_{norm} = 0.5 - (0.5 * HD_{raw}) * \sqrt{\frac{n_{bits}}{n_{typical}}}$$
 
 where $HD_{norm}$ is the normalized score, $HD_{raw}$ is the raw score, $n_{bits}$ is the number of bits compared, and $n_{typical}$ is the usual number of bits compared when comparing two iris images. To find $n_{typical}$, we combine the public datasets available from Notre Dame and calculate the average number of bits overlapping between polar-normalized masks.
 
-
-
 **Related papers:** 
 - A. Czajka, D. Moreira, K. Bowyer and P. Flynn, "Domain-Specific Human-Inspired Binarized Statistical Image Features for Iris Recognition," IEEE Winter Conference on Applications of Computer Vision (WACV), Waikoloa, HI, USA, pp. 959-967, 2019 [[IEEEXplore]](https://ieeexplore.ieee.org/document/8658238)
 - D. Moreira, M. Trokielewicz, A. Czajka, K. Bowyer and P. Flynn, "Performance of Humans in Iris Recognition: The Impact of Iris Condition and Annotation-Driven Verification," IEEE Winter Conference on Applications of Computer Vision (WACV), Waikoloa, HI, USA, pp. 941-949, 2019 [[IEEEXplore]](https://ieeexplore.ieee.org/document/8658624)
@@ -83,6 +81,25 @@ This method considers Fuch's crypts as salient, localized, human-detectable feat
 The crypt masks found serve as the iris template in this method. The crypt masks are then matched using the Earth Mover's Distance.
 
 **Related paper:** J. Chen, F. Shen, D. Z. Chen and P. J. Flynn, "Iris Recognition Based on Human-Interpretable Features," in IEEE Transactions on Information Forensics and Security, vol. 11, no. 7, pp. 1476-1485, 2016 [[IEEEXplore]](https://ieeexplore.ieee.org/document/7422104)
+
+<a name="methods-TripletNN"/></a>
+
+### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletNN)
+
+The encoding model used here is the smallest version of ConvNeXt (dubbed ConvNeXt-tiny) trained with batch-hard triplet mining loss on polar-normalized iris images. We use ConvNeXt-tiny due to timing constraints enforced by NIST.
+
+ConvNeXt models are a family of pure convolutional neural networks (ConvNets) that have been designed to be accurate, efficient, and scalable [[1]](#1). They are inspired by the design of Vision Transformers (ViTs), which have recently become the state-of-the-art for image classification tasks. However, ConvNeXts are built entirely from standard ConvNet modules, making them simpler and more efficient to train and deploy. 
+
+The paper's authors start from a basic ResNet architecture and optimize different aspects of the network by: i) using grouped convolutions like ResNeXt to increase model capacity and efficiency, ii) adapting the inverted bottleneck design pattern, commonly used in mobile architectures, to improve the efficiency of the network, iii) using larger kernels (e.g., 7x7) to help capture long-range dependencies more effectively, iv) Replacing Batch Normalization with Layer Normalization, as commonly used in Transformers, to improve training stability and performance, v) dividing the model into stages with increasing feature maps and decreasing spatial resolution inspired by the hierarchical structure of Vision Transformers, vi) using modern training techniques like Mixup and CutMix, which improve generalization and robustness and vii) using techniques like Stochastic Depth and Label Smoothing to prevent overfitting. By combining these architectural and training improvements, ConvNeXt models achieve superior performance compared to traditional ConvNets, closing the gap with Vision Transformers while maintaining the efficiency and simplicity of convolutional architectures. 
+
+Triplet mining loss is a technique used to learn embeddings by increasing the distance between unrelated data points (negative pairs) while simultaneously reducing the distance between related data points (positive pairs) [[2]](#2). This is achieved by enforcing a specific margin, a minimum distance that must exist between negative pairs. As illustrated below, a negative sample is an image belonging to a different class than the anchor image. The model aims to position these negative samples further away from the anchor in the embedding space. Conversely, a positive sample is an image from the same class as the anchor. The model seeks to place these positive samples closer to the anchor, effectively clustering similar data points together.
+
+Batch-hard triplet mining is a strategy that focuses on the most challenging negative samples for each anchor-positive pair within a batch. By concentrating on these hardest negatives, the model can learn more discriminative representations and improve its overall performance.
+
+<div style="text-align: center;">
+<img src="assets/TripletMiningVis.png" alt="tripletmining" width="640"/>
+</div>
+[Figure Source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
 
 <a name="methods-SEGM"/></a>
 ### Segmentation
