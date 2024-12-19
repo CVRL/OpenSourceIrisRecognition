@@ -48,8 +48,11 @@ cp "$ROOT/frvt/common/src/include/frvt_structs.h" "$ROOT/NIST-IREX-X/crypts/incl
 
 # Clone or-tools
 if ! test -d "$ROOT/or-tools"; then
-  git clone --depth 1 --branch v9.2 https://github.com/google/or-tools
+  wget https://github.com/google/or-tools/releases/download/v9.11/or-tools_amd64_ubuntu-20.04_cpp_v9.11.4210.tar.gz
+  tar xzvf or-tools_amd64_ubuntu-20.04_cpp_v9.11.4210.tar.gz
+  mv -v or-tools_x86_64_Ubuntu-20.04_cpp_v9.11.4210 or-tools
 fi
+export ORTOOLS_ROOT="$ROOT/or-tools"
 
 # Remove previous build
 if test -d "$ROOT/build"; then
@@ -58,7 +61,7 @@ fi
 
 # Configure and build the library
 mkdir build && cd build
-cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch/" -DOpenCV_DIR="$ROOT/opencv/build" -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS:BOOL=ON -DBUILD_EXAMPLES=OFF -DBUILD_SAMPLES=OFF -DUSE_SCIP=OFF ..
+cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch/" -DOpenCV_DIR="$ROOT/opencv/build/" -DORTOOLS_ROOT="$ROOT/or-tools/" -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 
 # Allow override of the checked OS Version
@@ -82,12 +85,13 @@ cd "$ROOT"
 if ! test -d "$ROOT/frvt/1N/lib/"; then
   mkdir "$ROOT/frvt/1N/lib/"
 fi
-cp "$ROOT/build/libfrvt_1N_nd_cvrl_crypts_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
-cp "$ROOT/build/lib/"* "$ROOT/frvt/1N/lib/"
-cp "$ROOT/libtorch/lib/"* "$ROOT/frvt/1N/lib/"
-cp "$ROOT/opencv/build/lib/"libopencv_imgproc* "$ROOT/frvt/1N/lib/"
-cp "$ROOT/opencv/build/lib/"libopencv_imgcodecs* "$ROOT/frvt/1N/lib/"
-cp "$ROOT/opencv/build/lib/"libopencv_core* "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/build/libfrvt_1N_nd_cvrl_crypts_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/build/lib/"* "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/libtorch/lib/"* "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/or-tools/lib/"* "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/opencv/build/lib/"libopencv_imgproc* "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/opencv/build/lib/"libopencv_imgcodecs* "$ROOT/frvt/1N/lib/"
+cp -vrf "$ROOT/opencv/build/lib/"libopencv_core* "$ROOT/frvt/1N/lib/"
 
 # Move to FRVT 1N directory to run validation
 cd "$ROOT/frvt/1N"

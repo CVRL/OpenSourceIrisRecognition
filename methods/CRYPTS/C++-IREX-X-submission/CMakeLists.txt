@@ -14,11 +14,9 @@ if( FRVT_DIR )
     target_include_directories("frvt_1N_nd_cvrl_crypts_${FRVT_VER}" PUBLIC "${FRVT_DIR}/common/src/include")
 endif()
 
-#find_package(ortools CONFIG REQUIRED)
-#target_include_directories("frvt_1N_nd_cvrl_crypts_${FRVT_VER}" PRIVATE "${ortools_INCLUDE_DIRS}")
-#target_link_libraries("frvt_1N_nd_cvrl_crypts_${FRVT_VER}" ortools)
-
-add_subdirectory(or-tools)
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${ORTOOLS_ROOT})
+find_package(ortools CONFIG REQUIRED)
+target_include_directories("frvt_1N_nd_cvrl_crypts_${FRVT_VER}" PRIVATE "${ortools_INCLUDE_DIRS}")
 target_link_libraries("frvt_1N_nd_cvrl_crypts_${FRVT_VER}" ortools::ortools)
 
 set(OpenCV_CUDA OFF)
