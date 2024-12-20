@@ -106,8 +106,8 @@ Triplet mining loss is a technique used to learn embeddings by increasing the di
 Batch-hard triplet mining is a strategy that focuses on the most challenging negative samples for each anchor-positive pair within a batch. By concentrating on these hardest negatives, the model can learn more discriminative representations and improve its overall performance.
 
 **Related papers:**
-- Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie. "A ConvNet for the 2020s." In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 11976-11986, 2022
-- Florian Schroff, Dmitry Kalenichenko, and James Philbin. "FaceNet: A Unified Embedding for Face Recognition and Clustering." In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 815-823, 2015
+- Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie. "A ConvNet for the 2020s," In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 11976-11986, 2022 [[PDF]](https://openaccess.thecvf.com/content/CVPR2022/papers/Liu_A_ConvNet_for_the_2020s_CVPR_2022_paper.pdf)
+- Florian Schroff, Dmitry Kalenichenko, and James Philbin. "FaceNet: A Unified Embedding for Face Recognition and Clustering," In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 815-823, 2015 [[PDF]](https://www.cv-foundation.org/openaccess/content_cvpr_2015/app/1A_089.pdf)
 
 <a name="methods-SEGM"/></a>
 ### Segmentation
