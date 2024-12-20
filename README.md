@@ -102,7 +102,8 @@ Batch-hard triplet mining is a strategy that focuses on the most challenging neg
 <div style="text-align: center;">
 <img src="assets/TripletMiningVis.png" alt="tripletmining" width="640"/>
 </div>
-[Figure Source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
+
+[Figure source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
 
 
 **Related papers:**
@@ -171,9 +172,9 @@ This GitHub repository:
 <a name="acknowledgments"/></a>
 ## Acknowledgments
 
-1. The development of the C++ (IREX X-compliant) versions of the HDBIF and CRYPTS methods was supported by the U.S. Department of Commerce (grant No. 60NANB22D153). The views and conclusions contained in this document are those of the authors and should not be interpreted as representing the official policies, either expressed or implied, of the U.S. Department of Commerce or the U.S. Government. Lead PI: [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/), Co-PI: [Patrick Flynn](https://sites.nd.edu/patrick-flynn/), graduate research assistant: [Siamul Karim Khan](https://www.siamul.info).
+1. The development of the C++ (IREX X-compliant) versions of the HDBIF and CRYPTS methods was supported by the U.S. Department of Commerce (grant No. 60NANB22D153). The views and conclusions contained in this document are those of the authors and should not be interpreted as representing the official policies, either expressed or implied, of the U.S. Department of Commerce or the U.S. Government. Lead PI: [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka), Co-PI: [Patrick Flynn](https://sites.nd.edu/patrick-flynn/), graduate research assistant: [Siamul Karim Khan](https://www.siamul.info).
 
-2. The segmentation model used in the Matlab version of the HDBIF method was developed by Mateusz Trokielewicz at Warsaw University of Technology, Poland, and was part of his PhD dissertation advised by Adam Czajka.
+2. The segmentation model used in the Matlab version of the HDBIF method was developed by [Mateusz Trokielewicz](https://scholar.google.pl/citations?user=ojQN288AAAAJ&hl=en) at Warsaw University of Technology, Poland, and was part of his PhD dissertation advised by [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka).
 
 <a name="license"/></a>
 ## License
