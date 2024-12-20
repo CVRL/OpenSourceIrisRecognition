@@ -171,7 +171,7 @@ This GitHub repository:
 <a name="acknowledgments"/></a>
 ## Acknowledgments
 
-1. The development of the C++ (IREX X-compliant) versions of the HDBIF and CRYPTS methods was supported by the U.S. Department of Commerce (grant No. 60NANB22D153). The views and conclusions contained in this document are those of the authors and should not be interpreted as representing the official policies, either expressed or implied, of the U.S. Department of Commerce or the U.S. Government. 
+1. The development of the C++ (IREX X-compliant) versions of the HDBIF and CRYPTS methods was supported by the U.S. Department of Commerce (grant No. 60NANB22D153). The views and conclusions contained in this document are those of the authors and should not be interpreted as representing the official policies, either expressed or implied, of the U.S. Department of Commerce or the U.S. Government. Lead PI: [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/), Co-PI: [Patrick Flynn](https://sites.nd.edu/patrick-flynn/), graduate research assistant: [Siamul Karim Khan](https://www.siamul.info).
 
 2. The segmentation model used in the Matlab version of the HDBIF method was developed by Mateusz Trokielewicz at Warsaw University of Technology, Poland, and was part of his PhD dissertation advised by Adam Czajka.
 
