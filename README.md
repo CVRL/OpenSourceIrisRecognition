@@ -97,14 +97,13 @@ The paper's authors start from a basic ResNet architecture and optimize differen
 
 Triplet mining loss is a technique used to learn embeddings by increasing the distance between unrelated data points (negative pairs) while simultaneously reducing the distance between related data points (positive pairs). This is achieved by enforcing a specific margin, a minimum distance that must exist between negative pairs. As illustrated below, a negative sample is an image belonging to a different class than the anchor image. The model aims to position these negative samples further away from the anchor in the embedding space. Conversely, a positive sample is an image from the same class as the anchor. The model seeks to place these positive samples closer to the anchor, effectively clustering similar data points together.
 
-Batch-hard triplet mining is a strategy that focuses on the most challenging negative samples for each anchor-positive pair within a batch. By concentrating on these hardest negatives, the model can learn more discriminative representations and improve its overall performance.
-
 <div style="text-align: center;">
 <img src="assets/TripletMiningVis.png" alt="tripletmining" width="640"/>
 </div>
 
 [Figure source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
 
+Batch-hard triplet mining is a strategy that focuses on the most challenging negative samples for each anchor-positive pair within a batch. By concentrating on these hardest negatives, the model can learn more discriminative representations and improve its overall performance.
 
 **Related papers:**
 - Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie. "A ConvNet for the 2020s." In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 11976-11986, 2022
