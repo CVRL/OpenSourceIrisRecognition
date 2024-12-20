@@ -167,6 +167,12 @@ This is a research open-source software. You are free to use it in your research
 
 This repository makes an attempt to list all available open source iris recognition algorithms offered by other teams. If you know a repository that should be included, but is not listed here, please open a pull request.
 
+### OpenAI / WorldCoin IRIS: Iris Recognition Inference System ###
+
+**Source Codes:** [[official GitHub]](https://github.com/worldcoin/open-iris)
+
+**Blog post:** [Iris recognition inference system](https://world.org/blog/engineering/iris-recognition-inference-system)
+
 ### OSIRIS (Open Source IRIS) ###
 
 **Source Codes:** [[official]](http://svnext.it-sudparis.eu/svnview2-eph/ref_syst/Iris_Osiris_v4.1) [[dockerized]](https://github.com/tohki/iris-osiris) [[VMBOX: CiTER implementation]](https://github.com/ClarksonCITeR/osiris_vmbox)
