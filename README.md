@@ -137,36 +137,19 @@ The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.or
 <a name="citations"/></a>
 ## Citations
 
-Research paper summarizing the IREX-X submissions of the HDBIF and CRYPTS methods:
-
-```
-@Article{ND_OpenSourceIrisRecognition_Paper,
-  author    = {Siamul Karim Khan and Patrick J. Flynn and Adam Czajka},
-  journal   = {...},
-  title     = {{IREX X Open-Source Iris Recognition Methods}},
-  year      = {2024},
-  issn      = {...},
-  month     = {...},
-  number    = {...},
-  pages     = {...},
-  volume    = {...},
-  abstract  = {...},
-  doi       = {...},
-  keywords  = {iris recognition;open source software},
-  publisher = {...},
-}
-```
-
 This GitHub repository:
 
 ```
 @Misc{ND_OpenSourceIrisRecognition_GitHub,
   howpublished = {\url{https://github.com/CVRL/OpenSourceIrisRecognition/}},
-  note         = {Accessed: April 18, 2024},
+  note         = {Accessed: ...},
   title        = {{University of Notre Dame Open Source Iris Recognition Repository}},
   authors      = {Adam Czajka and Siamul Karim Khan and Mateusz Trokielewicz and Patrick J. Flynn},
 }
 ```
+
+A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and TripletNN is planned to be submitted for review and to ArXiv soon.
+
 
 <a name="acknowledgments"/></a>
 ## Acknowledgments
