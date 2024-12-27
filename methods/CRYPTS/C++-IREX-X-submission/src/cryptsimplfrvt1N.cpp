@@ -570,6 +570,7 @@ ReturnStatus CryptsImplFRVT1N::identifyTemplate(
     // //cerr << "Min score found: " << minScore << endl;
     if (minScore >= 0.0 && minScore <= 1.0) {
       FRVT_1N::Candidate candidate;
+      candidate.isAssigned = true;
       candidate.templateId = templates_emd[i].id;
       candidate.score = minScore;
       all_candidates.push_back(candidate);
@@ -580,6 +581,9 @@ ReturnStatus CryptsImplFRVT1N::identifyTemplate(
   //cerr << "Scores found." << endl;
   if (all_candidates.size() == 0) {
     //cerr << "No candidates found." << endl;
+    FRVT_1N::Candidate candidate;
+    candidate.isAssigned = false;
+    candidateList.push_back(candidate);
     return ReturnCode::UnknownError;
   }
   // // cout << "All candidates found" << endl;
