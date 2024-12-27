@@ -746,6 +746,7 @@ ReturnStatus TripletNNImplFRVT1N::identifyTemplate(
     //////cerr << "minScore: " << minScore << endl;
     if (minScore >= 0) {
       FRVT_1N::Candidate candidate;
+      candidate.isAssigned = true;
       candidate.templateId = templates[i].id;
       candidate.score = minScore;
       all_candidates.push_back(candidate);
@@ -753,6 +754,9 @@ ReturnStatus TripletNNImplFRVT1N::identifyTemplate(
   }
   if (all_candidates.size() == 0) {
     //////////////////cerr << "No candidates found." << endl;
+    FRVT_1N::Candidate candidate;
+    candidate.isAssigned = false;
+    candidateList.push_back(candidate);
     return ReturnCode::UnknownError;
   }
 
