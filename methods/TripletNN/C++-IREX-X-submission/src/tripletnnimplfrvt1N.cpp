@@ -148,7 +148,7 @@ ReturnStatus TripletNNImplFRVT1N::initializeTemplateCreation(const std::string &
   }
   
   
-  cerr << "Changes are made 2." << endl;
+  //cerr << "Changes are made 2." << endl;
   
   init = true;
 
