@@ -14,6 +14,7 @@
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
 * [Other open-source iris recognition-related tools](#other)
+* [Contact](#contact)
 
 <a name="summary"/></a>
 ## Summary
@@ -210,4 +211,8 @@ This repository makes an attempt to list all available open source iris recognit
 
 **Source codes:** [[official]](https://github.com/mitre/iat)
 
+<a name="contact"/></a>
+## Contact
+
+In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) ([aczajka@nd.edu](aczajka@nd.edu)). 
 
