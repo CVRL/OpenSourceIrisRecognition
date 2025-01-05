@@ -214,5 +214,5 @@ This repository makes an attempt to list all available open source iris recognit
 <a name="contact"/></a>
 ## Contact
 
-In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) ([aczajka@nd.edu](aczajka@nd.edu)). 
+In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) at aczajka@nd.edu. 
 
