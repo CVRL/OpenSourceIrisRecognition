@@ -27,7 +27,7 @@ To run our segmentation models we need (a) the model weights and (b) to set the 
 Extract the downloaded zip file and copy the 'config' folder into the corresponding library source directory you want to compile ('C++-IREX-X-submission').
 
 ```sh
-wget -O config.zip https://notredame.box.com/shared/static/lo8ilx79rxc3us5sfnf1e3fqjwc3zq2v.zip
+wget -O config.zip https://notredame.box.com/shared/static/blm6oq6cv41mr12e5gwgoitn7w7qeucz.zip
 unzip config.zip
 cp -r config C++-IREX-X-submission/
 rm -r config.zip config
