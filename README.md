@@ -1,4 +1,4 @@
-# Notre Dame Open-source Iris Recognition 
+# Notre Dame Open-Source Iris Recognition 
 
 ## Table of contents
 * [Summary](#summary)
@@ -276,6 +276,7 @@ This repository makes an attempt to list all available open source iris recognit
 ## Contact
 
 In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) (aczajka@nd.edu). 
+
 
 
 
