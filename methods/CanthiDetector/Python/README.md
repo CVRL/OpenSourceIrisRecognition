@@ -112,7 +112,7 @@ Final Training Set Size:
 ### Model PMI_V1: CornerNet_PMI_838_422_0.000974.pth
 
 Training Dataset:
-- Subset of publi post-mortem iris datasets: [[Warsaw]](http://zbum.ia.pw.edu.pl/EN/node/46) and [[NIJ]](https://nij.ojp.gov/library/publications/software-tool-and-methodology-enhancement-unidentified-decedent-systems)
+- Subset of public post-mortem iris datasets: [[Warsaw]](http://zbum.ia.pw.edu.pl/EN/node/46) and [[NIJ]](https://nij.ojp.gov/library/publications/software-tool-and-methodology-enhancement-unidentified-decedent-systems)
 
 Dataset Statistics:
 - Total number of samples: 1,260
