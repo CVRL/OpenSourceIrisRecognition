@@ -182,7 +182,7 @@ The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.or
 
 - [x] [Python codes](methods/CanthiDetector/Python)
 
-The `CornerNet` model detects left and right iris canthi using **DINOv3 features** and a lightweight regression head put on top on DINO-sourced embeddings. The figure below illustrates the architecture of the solution. It was trained on approx. 900 iris images sourced from Notre Dame datasets, with eye canthi manually annotated by Notre Dame faculty members and students.
+The `CornerNet` model detects left and right iris canthi using **DINOv3 features** and a lightweight regression head put on top on DINO-sourced embeddings. The figure below illustrates the architecture of the solution. It was trained on approx. 900 iris images sourced from [public Notre Dame datasets](https://cvrl.nd.edu/projects/data/), with eye canthi manually annotated by Notre Dame faculty members and students.
 
 <img src="assets/canthi-pipeline.png" alt="Iris Canthi Detector" width="1200"/>
 
@@ -276,5 +276,6 @@ This repository makes an attempt to list all available open source iris recognit
 ## Contact
 
 In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) (aczajka@nd.edu). 
+
 
 
