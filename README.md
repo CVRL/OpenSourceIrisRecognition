@@ -1,4 +1,4 @@
-# Open-source iris recognition 
+# Notre Dame Open-source Iris Recognition 
 
 ## Table of contents
 * [Summary](#summary)
@@ -201,7 +201,7 @@ This GitHub repository:
   howpublished = {\url{https://github.com/CVRL/OpenSourceIrisRecognition/}},
   note         = {Accessed: ...},
   title        = {{University of Notre Dame Open Source Iris Recognition Repository}},
-  authors      = {Adam Czajka and Siamul Karim Khan and Mateusz Trokielewicz and Patrick J. Flynn},
+  authors      = {Adam Czajka and Siamul Karim Khan and Mateusz Trokielewicz and Rasel Ahmed Bhuiyan and Jozef Porubcin and Patrick J. Flynn},
 }
 ```
 
@@ -276,6 +276,7 @@ This repository makes an attempt to list all available open source iris recognit
 ## Contact
 
 In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) (aczajka@nd.edu). 
+
 
 
 
