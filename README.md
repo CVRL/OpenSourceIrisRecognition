@@ -6,9 +6,10 @@
 	* [Motivation for IREX-vetted open source iris recognition solutions](#summary-motivation)
 	* [Equivalence of C++ / Python / Matlab implementations](#summary-equivalence)
 * [Iris encoding methods](#methods)
-	* [Human-Driven Binary Image Features (HDBIF)](#methods-HDBIF)
-	* [Human-Interpretable Features (CRYPTS)](#methods-CRYPTS)
- 	* [ConvNeXt-tiny trained with Batch-hard Triplet Mining (TripletNN)](#methods-TripletNN)
+	* [ArcIris: ResNet trained with ArcFace loss](#methods-ArcIris)
+	* [TripletNN: ConvNeXt-tiny trained with batch-hard triplet mining loss](#methods-TripletNN)
+	* [HDBIF: Human-Driven Binary Image Features](#methods-HDBIF)
+	* [CRYPTS: Human-Interpretable Features](#methods-CRYPTS)
 * [Auxliary tools](#auxliary)
 	* [Iris image segmentation](#auxliary-SEGM)
 	* [Eye canthi detector](#auxliary-CANTHI)
@@ -47,6 +48,23 @@ The authors made a significant effort to keep implementations of the same method
 
 <a name="methods"/></a>
 ## Brief description of the methods offered
+
+<a name="methods-ArcIris"/></a>
+### ResNet neural network trained with ArcFace loss (ArcIris)
+
+- [x] [Python codes](methods/ArcIris/Python)
+- [x] [C++ (IREX X) codes](methods/ArcIris/C++-IREX-X-submission)
+- [x] ND [IREX X](https://pages.nist.gov/IREX10/) submission: `ndcvrl_002` (2025-05-12)
+
+The encoding model used here is a 100-layer ResNet model (ResNet100) adopted from the [official ArcFace PyTorch implementation](https://github.com/deepinsight/insightface/tree/master/recognition/arcface_torch). The model operates on polar-normalized iris images (512x64 px), derived from 640x480 originals via [Daugman's rubber sheet model](https://www.robots.ox.ac.uk/~az/lectures/est/iris.pdf), which unwraps the circular iris region into a rectangular format. The model was modified to work with input images in this format rather than the typical 112x112 px images, hence the name ArcIris. The ResNet100 backbone was chosen for its strong tradeoff in computational efficiency and accuracy when compared with its ResNet50 and ResNet200 counterparts, which is relevant for meeting timing constraints imposed by NIST IREX X evaluations.
+
+ArcIris was trained using ArcFace loss, which optimizes feature embeddings on a hypersphere using an additive angular margin. Unlike traditional Euclidean-based losses, ArcFace uses cosine similarity and directly enforces angular separation between classes. This design intuitively enhances intra-class compactness and inter-class discrepancy. Model variants are evaluated by calculating the $d'$ (sensitivity or decidability) index for genuine and impostor score distributions: a larger $d'$ indicates that the genuine and impostor means are farther apart (greater inter-class separability) and/or their variances are smaller (greater intra-class compactness). The final ArcIris solution is based on the training checkpoint for which $d'$ was maximum during validation.
+
+**Related papers:** 
+- John Daugman, "How iris recognition works," IEEE Transactions on Circuits and Systems for Video Technology, vol. 14, no. 1, pp. 21-30, Jan. 2004 [[PDF]](https://www.robots.ox.ac.uk/~az/lectures/est/iris.pdf)
+- Jiankang Deng, Jia Guo, Niannan Xue, and Stefanos Zafeiriou, “ArcFace: Additive Angular Margin Loss for Deep Face Recognition,” IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 4690–4699, 2019 [[PDF]](https://openaccess.thecvf.com/content_CVPR_2019/papers/Deng_ArcFace_Additive_Angular_Margin_Loss_for_Deep_Face_Recognition_CVPR_2019_paper.pdf)
+
+
 
 <a name="methods-TripletNN"/></a>
 ### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletNN)
@@ -133,7 +151,7 @@ The crypt masks found serve as the iris template in this method. The crypt masks
 <a name="auxiliary-SEGM"/></a>
 ### Iris image segmentation
 
-- [ ] [Python and C++ (IREX X) codes](methods/) are already included into iris encoding codes
+- [x] [Python and C++ (IREX X) codes](methods/) are already included into iris encoding codes
 - [ ] Used in ND [IREX X](https://pages.nist.gov/IREX10/) submissions: `ndcvrl_002` (2025-05-12), `ndcvrl_001` (2024-11-19)
 
 The iris segmentation compises two models. The first model does a classical pixel-wise estimation of the iris mask marking those pixels, which correspond to the iris texture (that is, are not occluded by eyelids, eyelashes or various deformations such as deformed/dried cornea in case of post-mortem samples). The segmentation model architecture is based on Unet++ with shared atrous residual blocks, and is illustrated below. The second model is a simple regressor estimating the circular approximations of the iris inner and outer iris boundaries.
