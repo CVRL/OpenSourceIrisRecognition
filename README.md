@@ -10,9 +10,9 @@
 	* [TripletNN: ConvNeXt-tiny trained with batch-hard triplet mining loss](#methods-TripletNN)
 	* [HDBIF: Human-Driven Binary Image Features](#methods-HDBIF)
 	* [CRYPTS: Human-Interpretable Features](#methods-CRYPTS)
-* [Auxliary tools](#auxliary)
-	* [Iris image segmentation](#auxliary-SEGM)
-	* [Eye canthi detector](#auxliary-CANTHI)
+* [Auxiliary tools](#auxiliary)
+	* [Iris image segmentation](#auxiliary-SEGM)
+	* [Eye canthi detector](#auxiliary-CANTHI)
 * [Citations](#citations)
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
@@ -276,4 +276,5 @@ This repository makes an attempt to list all available open source iris recognit
 ## Contact
 
 In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) (aczajka@nd.edu). 
+
 
