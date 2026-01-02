@@ -215,7 +215,9 @@ A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and Tri
 
 2. The segmentation model used in the Matlab version of the HDBIF method was developed by [Mateusz Trokielewicz](https://scholar.google.pl/citations?user=ojQN288AAAAJ&hl=en) at Warsaw University of Technology, Poland, and was part of his PhD dissertation advised by [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka).
 
+3. The [ArcIris model](#methods-ArcIris) has been developed by [Jozef Porubcin](https://www.linkedin.com/in/jozef-p/) as part of his Master's capstone project, mentored by [Siamul Karim Khan](https://www.siamul.info) and [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/).
 
+4. The [eye canthi detector](#auxiliary-CANTHI) has been developed by [Rasel Ahmed Bhuiyan](https://www.linkedin.com/in/rabhuiyan/) mentored by [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/).
 
 
 <a name="license"/></a>
@@ -276,6 +278,7 @@ This repository makes an attempt to list all available open source iris recognit
 ## Contact
 
 In case of questions related to this project and repository, contact [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/) (aczajka@nd.edu). 
+
 
 
 
