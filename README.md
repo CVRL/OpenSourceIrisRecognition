@@ -5,15 +5,17 @@
 	* [Purpose of this repository](#summary-purpose)
 	* [Motivation for IREX-vetted open source iris recognition solutions](#summary-motivation)
 	* [Equivalence of C++ / Python / Matlab implementations](#summary-equivalence)
-* [Brief description of the methods offered](#methods)
+* [Iris encoding methods](#methods)
 	* [Human-Driven Binary Image Features (HDBIF)](#methods-HDBIF)
 	* [Human-Interpretable Features (CRYPTS)](#methods-CRYPTS)
  	* [ConvNeXt-tiny trained with Batch-hard Triplet Mining (TripletNN)](#methods-TripletNN)
-	* [Segmentation](#methods-SEGM)
+* [Auxliary tools](#auxliary)
+	* [Iris image segmentation](#auxliary-SEGM)
+	* [Eye canthi detector](#auxliary-CANTHI)
 * [Citations](#citations)
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
-* [Other open-source iris recognition-related tools](#other)
+* [Other open-source iris recognition-related repositories](#other)
 * [Contact](#contact)
 
 <a name="summary"/></a>
@@ -46,8 +48,43 @@ The authors made a significant effort to keep implementations of the same method
 <a name="methods"/></a>
 ## Brief description of the methods offered
 
+<a name="methods-TripletNN"/></a>
+### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletNN)
+
+- [x] [Python codes](methods/TripletNN/Python)
+- [x] [C++ (IREX X) codes](methods/TripletNN/C++-IREX-X-submission)
+- [x] ND [IREX X](https://pages.nist.gov/IREX10/) submission: `ndcvrl_001` (2024-11-19)
+
+The encoding model used here is the smallest version of ConvNeXt (dubbed ConvNeXt-tiny) trained with batch-hard triplet mining loss on polar-normalized iris images. We use ConvNeXt-tiny due to timing constraints enforced by NIST.
+
+ConvNeXt models are a family of pure convolutional neural networks (ConvNets) that have been designed to be accurate, efficient, and scalable. They are inspired by the design of Vision Transformers (ViTs), which have recently become the state-of-the-art for image classification tasks. However, ConvNeXts are built entirely from standard ConvNet modules, making them simpler and more efficient to train and deploy. 
+
+The paper's authors start from a basic ResNet architecture and optimize different aspects of the network by: i) using grouped convolutions like ResNeXt to increase model capacity and efficiency, ii) adapting the inverted bottleneck design pattern, commonly used in mobile architectures, to improve the efficiency of the network, iii) using larger kernels (e.g., 7x7) to help capture long-range dependencies more effectively, iv) Replacing Batch Normalization with Layer Normalization, as commonly used in Transformers, to improve training stability and performance, v) dividing the model into stages with increasing feature maps and decreasing spatial resolution inspired by the hierarchical structure of Vision Transformers, vi) using modern training techniques like Mixup and CutMix, which improve generalization and robustness and vii) using techniques like Stochastic Depth and Label Smoothing to prevent overfitting. By combining these architectural and training improvements, ConvNeXt models achieve superior performance compared to traditional ConvNets, closing the gap with Vision Transformers while maintaining the efficiency and simplicity of convolutional architectures. 
+
+Triplet mining loss is a technique used to learn embeddings by increasing the distance between unrelated data points (negative pairs) while simultaneously reducing the distance between related data points (positive pairs). This is achieved by enforcing a specific margin, a minimum distance that must exist between negative pairs. As illustrated below, a negative sample is an image belonging to a different class than the anchor image. The model aims to position these negative samples further away from the anchor in the embedding space. Conversely, a positive sample is an image from the same class as the anchor. The model seeks to place these positive samples closer to the anchor, effectively clustering similar data points together.
+
+<div style="text-align: center;">
+<img src="assets/TripletMiningVis.png" alt="tripletmining" width="640"/>
+</div>
+
+[Figure source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
+
+Batch-hard triplet mining is a strategy that focuses on the most challenging negative samples for each anchor-positive pair within a batch. By concentrating on these hardest negatives, the model can learn more discriminative representations and improve its overall performance.
+
+**Related papers:**
+- Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie. "A ConvNet for the 2020s," In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 11976-11986, 2022 [[PDF]](https://openaccess.thecvf.com/content/CVPR2022/papers/Liu_A_ConvNet_for_the_2020s_CVPR_2022_paper.pdf)
+- Florian Schroff, Dmitry Kalenichenko, and James Philbin. "FaceNet: A Unified Embedding for Face Recognition and Clustering," In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 815-823, 2015 [[PDF]](https://www.cv-foundation.org/openaccess/content_cvpr_2015/app/1A_089.pdf)
+
+
+
+
 <a name="methods-HDBIF"/></a>
 ### Human-Driven Binary Image Features (HDBIF)
+
+- [x] [Python codes](methods/HDBIF/Python)
+- [x] [Matlab codes](methods/HDBIF/Matlab)
+- [x] [C++ (IREX X) codes](methods/HDBIF/C++-IREX-X-submission)
+- [ ] Submitted to [IREX X](https://pages.nist.gov/IREX10/), not in the leaderboard yet
 
 The HDBIF method leverages human perception capabilities in iris recognition. It utilizes N filtering kernels learned via Independent Component Analysis in a way to maximize the statistical independence of the filtered iris image patches identified, via eye tracking, as salient for humans:
 
@@ -74,6 +111,9 @@ where $HD_{norm}$ is the normalized score, $HD_{raw}$ is the raw score, $n_{bits
 <a name="methods-CRYPTS"/></a>
 ### Human-Interpretable Features (CRYPTS)
 
+- [x] [C++ (IREX X) codes](methods/CRYPTS/C++-IREX-X-submission)
+- [ ] Submitted to [IREX X](https://pages.nist.gov/IREX10/), not in the leaderboard yet
+
 This method considers Fuch's crypts as salient, localized, human-detectable features for iris matching. Crypts are extracted from images utilizing a strategy based on a sequence of morphological operations and connected component extractions as illustrated in the figure below:
 
 <div style="text-align: center;">
@@ -82,48 +122,31 @@ This method considers Fuch's crypts as salient, localized, human-detectable feat
 
 The crypt masks found serve as the iris template in this method. The crypt masks are then matched using the Earth Mover's Distance.
 
-**Related paper:** 
-- J. Chen, F. Shen, D. Z. Chen and P. J. Flynn, "Iris Recognition Based on Human-Interpretable Features," in IEEE Transactions on Information Forensics and Security, vol. 11, no. 7, pp. 1476-1485, 2016 [[IEEEXplore]](https://ieeexplore.ieee.org/document/7422104)
+**Related paper:** J. Chen, F. Shen, D. Z. Chen and P. J. Flynn, "Iris Recognition Based on Human-Interpretable Features," in IEEE Transactions on Information Forensics and Security, vol. 11, no. 7, pp. 1476-1485, 2016 [[IEEEXplore]](https://ieeexplore.ieee.org/document/7422104)
 
 
 
-<a name="methods-TripletNN"/></a>
-### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletNN)
 
-The encoding model used here is the smallest version of ConvNeXt (dubbed ConvNeXt-tiny) trained with batch-hard triplet mining loss on polar-normalized iris images. We use ConvNeXt-tiny due to timing constraints enforced by NIST.
+<a name="auxiliary"/></a>
+## Auxliary tools
 
-ConvNeXt models are a family of pure convolutional neural networks (ConvNets) that have been designed to be accurate, efficient, and scalable. They are inspired by the design of Vision Transformers (ViTs), which have recently become the state-of-the-art for image classification tasks. However, ConvNeXts are built entirely from standard ConvNet modules, making them simpler and more efficient to train and deploy. 
+<a name="auxiliary-SEGM"/></a>
+### Iris image segmentation
 
-The paper's authors start from a basic ResNet architecture and optimize different aspects of the network by: i) using grouped convolutions like ResNeXt to increase model capacity and efficiency, ii) adapting the inverted bottleneck design pattern, commonly used in mobile architectures, to improve the efficiency of the network, iii) using larger kernels (e.g., 7x7) to help capture long-range dependencies more effectively, iv) Replacing Batch Normalization with Layer Normalization, as commonly used in Transformers, to improve training stability and performance, v) dividing the model into stages with increasing feature maps and decreasing spatial resolution inspired by the hierarchical structure of Vision Transformers, vi) using modern training techniques like Mixup and CutMix, which improve generalization and robustness and vii) using techniques like Stochastic Depth and Label Smoothing to prevent overfitting. By combining these architectural and training improvements, ConvNeXt models achieve superior performance compared to traditional ConvNets, closing the gap with Vision Transformers while maintaining the efficiency and simplicity of convolutional architectures. 
+- [ ] [Python and C++ (IREX X) codes](methods/) are already included into iris encoding codes
+- [ ] Used in ND [IREX X](https://pages.nist.gov/IREX10/) submissions: `ndcvrl_002` (2025-05-12), `ndcvrl_001` (2024-11-19)
 
-Triplet mining loss is a technique used to learn embeddings by increasing the distance between unrelated data points (negative pairs) while simultaneously reducing the distance between related data points (positive pairs). This is achieved by enforcing a specific margin, a minimum distance that must exist between negative pairs. As illustrated below, a negative sample is an image belonging to a different class than the anchor image. The model aims to position these negative samples further away from the anchor in the embedding space. Conversely, a positive sample is an image from the same class as the anchor. The model seeks to place these positive samples closer to the anchor, effectively clustering similar data points together.
-
-<div style="text-align: center;">
-<img src="assets/TripletMiningVis.png" alt="tripletmining" width="640"/>
-</div>
-
-[Figure source](https://link.springer.com/article/10.1007/s11227-021-03994-z)
-
-Batch-hard triplet mining is a strategy that focuses on the most challenging negative samples for each anchor-positive pair within a batch. By concentrating on these hardest negatives, the model can learn more discriminative representations and improve its overall performance.
-
-**Related papers:**
-- Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie. "A ConvNet for the 2020s," In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 11976-11986, 2022 [[PDF]](https://openaccess.thecvf.com/content/CVPR2022/papers/Liu_A_ConvNet_for_the_2020s_CVPR_2022_paper.pdf)
-- Florian Schroff, Dmitry Kalenichenko, and James Philbin. "FaceNet: A Unified Embedding for Face Recognition and Clustering," In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, pp. 815-823, 2015 [[PDF]](https://www.cv-foundation.org/openaccess/content_cvpr_2015/app/1A_089.pdf)
-
-<a name="methods-SEGM"/></a>
-### Segmentation
-
-**Python and C++ versions**
-
-To train the pixel-wise segmentation model, we utilized a set of iris images with their corresponding ground truth masks, sampled from a large corpus of publicly-available datasets: i) BioSec, ii) BATH, iii) ND-Iris-0405, iv) CASIA-V4-Iris-Interval, v) UBIRIS v2, vi) Warsaw-BioBase-Disease-Iris v2.1, and vii) Warsaw-BioBase-Post-Mortem-Iris v2.0. The model architecture is illustrated below:
+The iris segmentation compises two models. The first model does a classical pixel-wise estimation of the iris mask marking those pixels, which correspond to the iris texture (that is, are not occluded by eyelids, eyelashes or various deformations such as deformed/dried cornea in case of post-mortem samples). The segmentation model architecture is based on Unet++ with shared atrous residual blocks, and is illustrated below. The second model is a simple regressor estimating the circular approximations of the iris inner and outer iris boundaries.
 
 <div style="text-align: center;">
 <img src="assets/nestedsharedatrousresunet.svg" alt="nestedsharedatrousresunet" width="800">
 </div>
 
-To train the model estimating the circular approximations of the iris boundaries, we utilize the Open Eye Dataset (OpenEDS). We filter the images from this dataset to exclude images where the iris is significantly off-center, carry out Hough transform to get the ground truth pupil and iris circle parameters, and utilize these images to train our circle parameter estimation model.
+To train the pixel-wise  segmentation model, we utilized a set of iris images with their corresponding ground truth masks, sampled from a large corpus of publicly-available datasets: i) BioSec, ii) BATH, iii) ND-Iris-0405, iv) CASIA-V4-Iris-Interval, v) UBIRIS v2, vi) Warsaw-BioBase-Disease-Iris v2.1, and vii) Warsaw-BioBase-Post-Mortem-Iris v2.0. 
 
-Here's an illustration of segmentations found by the given model on a few images from the public IREX X validation set:
+To train the model estimating the circular approximations of the iris boundaries, we utilize the Open Eye Dataset (OpenEDS). We excluded images where the iris was significantly off-center, carried out Hough transform to get the ground truth pupil and iris circle parameters, and utilized these samples to train our circle parameter estimation model.
+
+Here's an illustration of segmentations found by the models on a few images from the public IREX X validation set:
 
 <div style="text-align: center;">
 <img src="assets/segm-nist-examples.jpg" alt="segm-nist-examples" width="800">
@@ -134,6 +157,21 @@ Here's an illustration of segmentations found by the given model on a few images
 The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.org/document/7803544) architecture. It was trained on the same set of iris images with their corresponding binary masks as the Python and C++ versions. Circular approximations are estimated by a Hough Transform applied to binary masks.
 
 **Related paper:** M. Trokielewicz, A. Czajka, P. Maciejewicz, “Post-mortem iris recognition with deep learning-based image segmentation,” Image and Vision Computing, Vol. 94 (103866), Feb. 2020 [[Elsevier]](https://www.sciencedirect.com/science/article/pii/S0262885619304597) [[ArXiv]](https://arxiv.org/abs/1901.01708)
+
+
+<a name="auxiliary-CANTHI"/></a>
+### Eye canthi detector
+
+- [x] [Python codes](methods/CanthiDetector/Python)
+
+The `CornerNet` model detects left and right iris canthi using **DINOv3 features** and a lightweight regression head put on top on DINO-sourced embeddings. The figure below illustrates the architecture of the solution. It was trained on approx. 900 iris images sourced from Notre Dame datasets, with eye canthi manually annotated by Notre Dame faculty members and students.
+
+<img src="assets/canthi-pipeline.png" alt="Iris Canthi Detector" width="1200"/>
+
+The model returns positions of the left and right (whichever exists) canthi. As illustrated below, those canthi can be used to align an iris image so that both corners are placed horizontally.
+
+<img src="assets/canthi-sample.png" alt="Iris Canthi Detector" width="1200"/>
+
 
 <a name="citations"/></a>
 ## Citations
@@ -159,12 +197,17 @@ A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and Tri
 
 2. The segmentation model used in the Matlab version of the HDBIF method was developed by [Mateusz Trokielewicz](https://scholar.google.pl/citations?user=ojQN288AAAAJ&hl=en) at Warsaw University of Technology, Poland, and was part of his PhD dissertation advised by [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka).
 
+
+
+
 <a name="license"/></a>
 ## License
 This is a research open-source software. You are free to use it in your research projects upon citing the sources as indicated in the [Citations](#citations) section. Please discuss individual licensing options if you want to use this software for commercial purposes, or to create and distribute closed source versions.
 
+
+
 <a name="other"/></a>
-## Other open-source iris recognition repositories
+## Other open-source iris recognition-related repositories
 
 This repository makes an attempt to list all available open source iris recognition algorithms offered by other teams. If you know a repository that should be included, but is not listed here, please open a pull request.
 

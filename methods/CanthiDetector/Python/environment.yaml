@@ -1,0 +1,24 @@
+name: canthi
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.11
+  - pip
+  - omegaconf
+  - pip:
+      - ftfy==6.3.1
+      - iopath==0.1.10
+      - omegaconf==2.3.0
+      - pandas==2.3.2
+      - regex==2025.7.34
+      - scikit-learn==1.7.1
+      - opencv-python==4.12.0.88
+      - submitit==1.5.3
+      - termcolor==3.1.0
+      - torch==2.7.1 --index-url https://download.pytorch.org/whl/cu118
+      - torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cu118
+      - torchmetrics==1.8.1
+      - easydict==1.13
+      - madgrad==1.3 
