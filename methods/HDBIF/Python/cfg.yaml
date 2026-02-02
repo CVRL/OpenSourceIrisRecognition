@@ -15,4 +15,4 @@ recog_num_filters: "5"
 recog_max_shift: 16
 recog_bsif_dir: "./filters_pt/finetuned_bsif_eyetracker_data/"
 threshold_frac_avg_bits: 0
-score_norm: False
+score_norm: True
