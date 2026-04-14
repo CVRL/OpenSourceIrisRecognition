@@ -61,7 +61,7 @@ Here's an overall description of everything that is done by the script file prov
 2. We build our library using CMake. We also utilize unzip to extract downloaded zip files. As such, the first instruction in the script is to install CMake and unzip.
 
    ```sh
-   sudo apt install unzip cmake cmake-curses-gui
+   sudo apt install unzip cmake cmake-curses-gui build-essential
    ```
 
 3. We download and extract the Libtorch library:

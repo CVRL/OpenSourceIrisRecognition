@@ -1,7 +1,7 @@
 export ROOT="$PWD"
 
 # Install system tools and dependencies
-sudo apt install unzip cmake cmake-curses-gui
+sudo apt install unzip cmake cmake-curses-gui build-essential
 
 # Get Pytorch Dependency
 if ! test -d "$ROOT/libtorch/"; then
