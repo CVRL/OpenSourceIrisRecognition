@@ -141,9 +141,9 @@ Here's an overall description of everything that is done by the script file prov
 11. We copy the config directory into the FRVT repo:
 
     ```sh
-   if ! test -d "$ROOT/frvt/1N/config/"; then
+    if ! test -d "$ROOT/frvt/1N/config/"; then
       cp -r "$ROOT/config/" .
-   fi
+    fi
     ```
 
    Optional: If you have an Ubuntu version different from 24.04.3, you can still run the validation routine by disabling checks setting IGNORE_CHECKS to true:
