@@ -205,7 +205,7 @@ This GitHub repository:
 }
 ```
 
-A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and TripletIris is planned to be submitted for review and to ArXiv soon.
+A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS, TripletIris, and ArcIris is planned to be submitted for review and to ArXiv soon.
 
 
 <a name="acknowledgments"/></a>
