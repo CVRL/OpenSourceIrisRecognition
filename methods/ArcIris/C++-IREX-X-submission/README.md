@@ -146,7 +146,7 @@ Here's an overall description of everything that is done by the script file prov
     fi
     ```
 
-   Optional: If you have an Ubuntu version different from 24.04.3, you can still run the validation routine by disabling checks setting IGNORE_CHECKS to true:
+    Optional: If you have an Ubuntu version different from 24.04.3, you can still run the validation routine by disabling checks setting IGNORE_CHECKS to true:
 
     ```sh
     if [ "$IGNORE_CHECKS" = true ]; then
