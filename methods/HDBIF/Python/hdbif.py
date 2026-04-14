@@ -58,10 +58,9 @@ def main(cfg):
         cv2.imwrite(path + "_im_polar.png",im_polar)
         cv2.imwrite(path + "_mask_polar.png",mask_polar)
         np.savez_compressed("./templates/" + os.path.splitext(fn)[0] + "_tmpl.npz",code)
-        for singleFilterCode in code:
-            for filter_size, num_filters in zip(irisRec.filter_sizes, irisRec.num_filters_per_size):
-                for i in range(num_filters):
-                    cv2.imwrite(("%s_code_filter%dx%d_%d.png" % (path,filter_size,filter_size,i)),255*singleFilterCode[i,:,:])
+        for singleFilterCode, filter_size in zip(code, irisRec.filter_sizes):
+            for i in range(singleFilterCode.shape[0]):
+                cv2.imwrite(("%s_code_filter%dx%d_%d.png" % (path,filter_size,filter_size,i)),255*singleFilterCode[i,:,:])
 
     # Matching (all-vs-all, as an example)
     for code1,mask1,fn1,i in zip(code_list,polar_mask_list,filename_list,range(len(code_list))):
