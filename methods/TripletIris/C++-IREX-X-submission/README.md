@@ -19,11 +19,12 @@ export FRVT_VER=<version_number>
 
 This library version is the current version for your submission, e.g. if you are submitting it for the first time then, you should set the version number as 000 and therefore, you should run 'export FRVT_VER=000'. 
 
-To run our segmentation models we need (a) the model weights and (b) to set the parameters for our iris recognition model we need the appropriate config file (should be named 'cfg.yaml') inside a directory named 'config' in our library source directory. You can download the zip file containing tis 'config' directory from [config-directory-zip](https://notredame.box.com/shared/static/7ms049ltn2vpryaspywnmfgqbwgv3tpn.zip).
+To run our segmentation models we need (a) the model weights and (b) to set the parameters for our iris recognition model we need the appropriate config file (should be named 'cfg.yaml') inside a directory named 'config' in our library source directory. You can download the zip file containing this 'config' directory from [config-directory-zip](https://notredame.box.com/shared/static/blm6oq6cv41mr12e5gwgoitn7w7qeucz.zip).
+
 Extract the downloaded zip file and copy the 'config' folder into the corresponding library source directory you want to compile ('C++-IREX-X-submission').
 
 ```sh
-wget -O config.zip https://notredame.box.com/shared/static/7ms049ltn2vpryaspywnmfgqbwgv3tpn.zip
+wget -O config.zip https://notredame.box.com/shared/static/blm6oq6cv41mr12e5gwgoitn7w7qeucz.zip
 unzip config.zip
 cp -r config C++-IREX-X-submission/
 rm -r config.zip config
@@ -97,7 +98,7 @@ Here's an overall description of everything that is done by the script file prov
    export FRVT_DIR="$ROOT/frvt"
    ```
 
-6. We configure and compile the ArcIris library:
+6. We configure and compile the TripletIris library:
 
    ```sh
    mkdir build && cd build
@@ -126,27 +127,25 @@ Here's an overall description of everything that is done by the script file prov
 
     ```sh
     mkdir "$ROOT/frvt/1N/lib"
-    cp "$ROOT/build/libfrvt_1N_ndcvrl_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
+    cp "$ROOT/build/libfrvt_1N_nd_cvrl_tripletiris_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
     cp "$ROOT/libtorch/lib/"lib* "$ROOT/frvt/1N/lib/"
     cp "$ROOT/opencv/build/lib/"libopencv_imgproc* "$ROOT/frvt/1N/lib/"
     cp "$ROOT/opencv/build/lib/"libopencv_imgcodecs* "$ROOT/frvt/1N/lib/"
     cp "$ROOT/opencv/build/lib/"libopencv_core" "$ROOT/frvt/1N/lib/"
     ```
 
-10. Move to frvt/1N
+10. We move to frvt/1N
    ```sh
    cd "$ROOT/frvt/1N"
    ```
 
 11. We copy the config directory into the FRVT repo:
 
-    ```sh
-   if ! test -d "$ROOT/frvt/1N/config/"; then
-      cp -r "$ROOT/config/" .
-   fi
-    ```
+   ```sh
+   cp -r "$ROOT/config" "./"
+   ```
 
-   Optional: If you have an Ubuntu version different from 24.04.3, you can still run the validation routine by disabling checks setting IGNORE_CHECKS to true:
+   Optional: We disable checks if IGNORE_CHECKS is true
 
    ```sh
    if [ "$IGNORE_CHECKS" = true ]; then
@@ -161,7 +160,7 @@ Here's an overall description of everything that is done by the script file prov
    fi
    ```
 
-12. Finally, we run the validation routine:
+12. Finally, we move to the FRVT 1N directory and run the validation routine:
 
     ```sh
     ./run_validate_1N.sh

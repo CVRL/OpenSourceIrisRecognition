@@ -89,7 +89,7 @@ ReturnStatus CryptsImplFRVT1N::initializeTemplateCreation(const std::string &con
     mask_model = torch::jit::load(fine_mask_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     //cerr << "error loading the mask model" << endl;
-    return ReturnCode::ConfigError;
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading mask detection model");
   }
 
   string circle_param_model_path = (configDir + "/" + cfg["circle_param_model_path"]).c_str();
@@ -98,7 +98,7 @@ ReturnStatus CryptsImplFRVT1N::initializeTemplateCreation(const std::string &con
     circle_model = torch::jit::load(circle_param_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     //cerr << "error loading the circle model" << endl;
-    return ReturnCode::ConfigError;
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading circle detection model");
   }
 
   polar_height = stoi(cfg["polar_height"]);
@@ -131,7 +131,7 @@ ReturnStatus CryptsImplFRVT1N::initializeTemplateCreation(const std::string &con
   CRYPTS_GD_MAX_SHIFT = stoi(cfg["CRYPTS_GD_MAX_SHIFT"]);
   CRYPTS_FRACTION_TOTAL_PAIRS = stof(cfg["CRYPTS_FRACTION_TOTAL_PAIRS"]);
   CRYPTS_MASK_THRESHOLD = stoi(cfg["CRYPTS_MASK_THRESHOLD"]);
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 ReturnStatus CryptsImplFRVT1N::createFaceTemplate(
@@ -356,7 +356,7 @@ ReturnStatus CryptsImplFRVT1N::finalizeEnrollment(
 
   edbdest << edbsrc.rdbuf();
   manifestdest << manifestsrc.rdbuf();
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 /**
@@ -451,7 +451,7 @@ ReturnStatus CryptsImplFRVT1N::identifyTemplate(
 ) {
   if (idTemplate.size() == 0) {
     //cerr << "Template doesn't contain matchable data" << endl;
-    return ReturnCode::VerifTemplateError;
+    return ReturnStatus(ReturnCode::VerifTemplateError, "Template size zero");
   }
 
   vector<FRVT_1N::Candidate> all_candidates;
@@ -584,7 +584,7 @@ ReturnStatus CryptsImplFRVT1N::identifyTemplate(
     FRVT_1N::Candidate candidate;
     candidate.isAssigned = false;
     candidateList.push_back(candidate);
-    return ReturnCode::UnknownError;
+    return ReturnStatus(ReturnCode::VerifTemplateError, "No candidates found.");
   }
   // // cout << "All candidates found" << endl;
   sort(all_candidates.begin(), all_candidates.end(), [](const FRVT_1N::Candidate &lhs, const FRVT_1N::Candidate &rhs) {
@@ -596,7 +596,7 @@ ReturnStatus CryptsImplFRVT1N::identifyTemplate(
     for (int i = 0; i < (int) candidateListLength; i++)
       candidateList.push_back(all_candidates[i]);
   }
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 /* Private Code */

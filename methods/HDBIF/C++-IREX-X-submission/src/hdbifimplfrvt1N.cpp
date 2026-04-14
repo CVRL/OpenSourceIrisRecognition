@@ -155,7 +155,7 @@ std::shared_ptr<FRVT_1N::Interface> FRVT_1N::Interface::getImplementation() {
 ReturnStatus HdbifImplFRVT1N::initializeTemplateCreation(const std::string &configDir, FRVT::TemplateRole role) {
   if (init == true) {
     ////cerr << "Already initialized, skipping..." << endl;
-    return ReturnCode::Success;
+    return ReturnStatus(ReturnCode::Success, "Already Initialized");
   }
   
   torch::AutoGradMode enable_grad(false);
@@ -176,14 +176,14 @@ ReturnStatus HdbifImplFRVT1N::initializeTemplateCreation(const std::string &conf
     mask_model = torch::jit::load(fine_mask_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     //////cerr << "error loading the mask model\n";
-    return ReturnCode::ConfigError;
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading mask detection model");
   }
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
     circle_model = torch::jit::load(circle_param_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     //////cerr << "error loading the circle model\n";
-    return ReturnCode::ConfigError;
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading circle detection model");
   }
   polar_height = stoi(cfg["polar_height"]);
   polar_width = stoi(cfg["polar_width"]);
@@ -219,8 +219,11 @@ ReturnStatus HdbifImplFRVT1N::initializeTemplateCreation(const std::string &conf
   norm_params_circle[1] = stod(cfg["norm_std_circle"]);
 
   score_norm = stoi(cfg["score_norm"]);
+  
+  min_pupil_radius = stoi(cfg["MINIMUM_PUPIL_RADIUS"]);
+  min_iris_radius = stoi(cfg["MINIMUM_IRIS_RADIUS"]);
 
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 ReturnStatus HdbifImplFRVT1N::createFaceTemplate(
@@ -303,7 +306,39 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
     //cerr << "Before segmentation" << endl;
     map<string, at::Tensor>* seg_im = new map<string, at::Tensor>;
     this->segment_and_circApprox(irisim.clone(), seg_im);
+    double ix = (*seg_im)["iris_xyr"].index({0}).item<double>();
+    double iy = (*seg_im)["iris_xyr"].index({1}).item<double>();
+    double ir = (*seg_im)["iris_xyr"].index({2}).item<double>();
+    double px = (*seg_im)["pupil_xyr"].index({0}).item<double>();
+    double py = (*seg_im)["pupil_xyr"].index({1}).item<double>();
+    double pr = (*seg_im)["pupil_xyr"].index({2}).item<double>();
 
+    if (pr <= min_pupil_radius) {
+      ////////////cerr << "The pupil radius is too small." << endl;
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil radius is too small");
+      //continue;
+    }
+
+    if (ir <= min_iris_radius) {
+      ////////////cerr << "The iris radius is too small." << endl;
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Iris radius is too small");
+      //continue;
+    }
+
+    double alpha = pr / ir;
+    if (alpha < 0.1 || alpha > 0.75) {
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil-to-iris ratio doesn't fall in the valid range i.e., alpha < 0.1 or alpha > 0.75");
+      //continue;
+    }
+
+    double center_dist = sqrt( pow((px - ix), 2) + pow((py - iy), 2) );
+    //cerr << "center dist: " << center_dist << endl;
+    if (double(center_dist / ir) > 0.5) {
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil and iris centers are too far apart, more than half of the iris radius.");
+      //continue;
+    }
+
+    /*
     if (irisLocations.size() > i){
       if (irisLocations[i].limbusCenterX != 0) {
           (*seg_im)["iris_xyr"].index({0}) = (float)irisLocations[i].limbusCenterX;
@@ -329,22 +364,7 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
         irisLocations[i].pupilRadius = (uint16_t) (*seg_im)["pupil_xyr"][2].item<float>();
       }
     }
-    
-    float alpha = (*seg_im)["pupil_xyr"].index({2}).item<float>() / (*seg_im)["iris_xyr"].index({2}).item<float>();
-    if (alpha <= 0.1 || alpha >= 0.8) {
-      continue;
-    }
-
-    if ((*seg_im)["pupil_xyr"].index({2}).item<float>() < 12) {
-      //////cerr << "The pupil radius is too small." << endl;
-      continue;
-    }
-
-    if ((*seg_im)["iris_xyr"].index({2}).item<float>() < 16) {
-      //////cerr << "The iris radius is too small." << endl;
-      continue;
-    }
-    ////cerr << "Before cartToPol" << endl;
+    */
 
     map<string, at::Tensor>* c2p_im = new map<string, at::Tensor>;
     this->cartToPol(irisim.clone(), (*seg_im)["mask"].clone().detach(), (*seg_im)["pupil_xyr"].clone().detach(), (*seg_im)["iris_xyr"].clone().detach(), c2p_im);
@@ -358,7 +378,7 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
 
     if (code.sum().item<float>() == 0) {
       ////cerr << "Code is all zeroes." << endl;
-      continue;
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Detected code is all zeroes.");
     }
     
     int codeSize = (codeSize0 * codeSize1 * codeSize2);
@@ -377,7 +397,7 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
     
     if ((mask.sum().item<float>() / (maskSize * 255)) < 0.10) {
       ////cerr << "Mask is too small." << endl;
-      continue;
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Detected mask is too small.");
     }
     
     ////cerr << codeSize << " " << maskSize << endl;
@@ -408,10 +428,10 @@ FRVT::ReturnStatus HdbifImplFRVT1N::createIrisTemplate(
   
   if (templ.size() == 0) {
     // //cout << "No templates created." << endl;
-    return ReturnStatus(ReturnCode::TemplateCreationError);
+    return ReturnStatus(ReturnCode::ExtractError, "Template size zero, creation failed");
   }
   
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 FRVT::ReturnStatus HdbifImplFRVT1N::createFaceAndIrisTemplate(
@@ -482,7 +502,7 @@ ReturnStatus HdbifImplFRVT1N::finalizeEnrollment(
 
   edbdest << edbsrc.rdbuf();
   manifestdest << manifestsrc.rdbuf();
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 /**
@@ -615,7 +635,7 @@ ReturnStatus HdbifImplFRVT1N::identifyTemplate(
   
   if (idTemplate.size() == 0) {
     ////////////cerr << "Template doesn't contain matchable data" << endl;
-    return ReturnCode::VerifTemplateError;
+    return ReturnStatus(ReturnCode::VerifTemplateError, "Template size zero");
   }
   //cout << "Identify Template: " << endl;
 
@@ -766,7 +786,7 @@ ReturnStatus HdbifImplFRVT1N::identifyTemplate(
     FRVT_1N::Candidate candidate;
     candidate.isAssigned = false;
     candidateList.push_back(candidate);
-    return ReturnCode::UnknownError;
+    return ReturnStatus(ReturnCode::VerifTemplateError, "No candidates found");
   }
 
   int n_candidates = min({(int) all_candidates.size(), (int) candidateListLength});
@@ -793,7 +813,7 @@ ReturnStatus HdbifImplFRVT1N::identifyTemplate(
   //ofstream timeLog("identification_times.txt", ios::app);
   //timeLog << duration.count() << endl;
 
-  return ReturnCode::Success;
+  return ReturnStatus(ReturnCode::Success);
 }
 
 

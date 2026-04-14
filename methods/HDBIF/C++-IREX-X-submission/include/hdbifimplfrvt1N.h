@@ -57,6 +57,8 @@ namespace FRVT_1N {
       int num_filters;
       int max_shift;
       int score_norm; // 0 for false and 1 for true
+      int min_pupil_radius;
+      int min_iris_radius;
       string fine_mask_model_path;
       string circle_param_model_path;
       string bsif_dir;

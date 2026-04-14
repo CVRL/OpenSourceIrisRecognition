@@ -1,13 +1,10 @@
 ## Setting up the compilation environment
 
-We recommend to set up an environment with [Ubuntu 20.04.3 as provided by NIST](https://nigos.nist.gov/evaluations/ubuntu-20.04.3-live-server-amd64.iso). It is best if a clean installation of the given ISO is used. The IREX validation routine has a check for the OS version and it will not run unless you are working on Ubuntu 20.04.3. However, if you absolutely have to compile it with any other version of Ubuntu, you can circumvent this OS version check by using:
+We recommend to set up an environment with [Ubuntu 24.04.3 as provided by NIST](https://nigos.nist.gov/evaluations/ubuntu-24.04.3-live-server-amd64.iso). It is best if a clean installation of the given ISO is used. The IREX validation routine has a check for the OS version and it will not run unless you are working on Ubuntu 24.04.3. However, if you absolutely have to compile it with any other version of Ubuntu, you can circumvent this OS version check by using:
 
 ```sh
-export FRVT_OS_VER=<your_ubuntu_version>
-# export FRVT_OS_VER=20.04.6 if your ubuntu version is 20.04.6
+export IGNORE_CHECKS=true
 ```
- 
-For example, if you are using Ubuntu 20.04.6, you can set the FRVT_OS_VER to your Ubuntu version 20.04.6. While we have compiled the library in Ubuntu 20.04.6 and found it to work fine on our test bench run on Ubuntu 20.04.3, we do not recommend doing this.
 
 ## Compiling the libraries
 
@@ -50,7 +47,7 @@ The script file also runs the IREX validation routine to generate the package th
 
 ## Ensuring that the library works before official submission
 
-After the validation completes, it should generate the package for submission. One important thing to note is that if you have not copied all the dependencies into the 'lib' folder before running the validation routine, the package might still be generated as the routine can find the default installations for these dependencies if the dependencies are already installed in the system. It is therefore wise to take this generated package, extract the library files, and run the FRVT validation routine on a fresh installation of the [iso provided by NIST (Ubuntu 20.04.3)](https://nigos.nist.gov/evaluations/ubuntu-20.04.3-live-server-amd64.iso). If you want, you can skip running the validation routine in your compilation machine (you would have to delete the appropriate lines from the script file), and simply copy over the required library files and run the validation routine on the fresh machine.
+After the validation completes, it should generate the package for submission. One important thing to note is that if you have not copied all the dependencies into the 'lib' folder before running the validation routine, the package might still be generated as the routine can find the default installations for these dependencies if the dependencies are already installed in the system. It is therefore wise to take this generated package, extract the library files, and run the FRVT validation routine on a fresh installation of the [iso provided by NIST (Ubuntu 24.04.3)](https://nigos.nist.gov/evaluations/ubuntu-24.04.3-live-server-amd64.iso). If you want, you can skip running the validation routine in your compilation machine (you would have to delete the appropriate lines from the script file), and simply copy over the required library files and run the validation routine on the fresh machine.
 
 ## Description of the `build.sh` script file
 
@@ -101,14 +98,7 @@ Here's an overall description of everything that is done by the script file prov
    export FRVT_DIR="$ROOT/frvt"
    ```
 
-   Optional: If you have an Ubuntu version different from 20.04.3, you can still run the validation routine by setting the FRVT_OS_VER variable by:
-
-   ```sh
-   export FRVT_OS_VER=<your_ubuntu_version>
-   sed -i "s/20.04.3/$FRVT_OS_VER/g"  "$FRVT_DIR/common/scripts/utils.sh"
-   ```
-
-7. We configure and compile the HDBIF library:
+6. We configure and compile the HDBIF library:
 
    ```sh
    mkdir build && cd build
@@ -118,7 +108,7 @@ Here's an overall description of everything that is done by the script file prov
 
    This will compile our library, now we have to run the validation routine using the library file generated.
 
-8. Next, we extract the validation images:
+7. Next, we extract the validation images:
 
    ```sh
    cd "$ROOT/frvt/common/images/iris"
@@ -126,14 +116,14 @@ Here's an overall description of everything that is done by the script file prov
    tar xvf NIST_validation_images.tar
    ```
 
-9. We set the library version number for the FRVT validation routine:
+8. We set the library version number for the FRVT validation routine:
 
    ```sh
    mkdir "$ROOT/frvt/1N/doc" || true
    echo "$FRVT_VER" > "$ROOT/frvt/1N/doc/version.txt"
    ```
 
-10. We copy the library and the required dependencies to the FRVT repo.
+9. We copy the library and the required dependencies to the FRVT repo.
 
     ```sh
     mkdir "$ROOT/frvt/1N/lib"
@@ -143,16 +133,36 @@ Here's an overall description of everything that is done by the script file prov
     cp "$ROOT/opencv/build/lib/"libopencv_imgcodecs* "$ROOT/frvt/1N/lib/"
     cp "$ROOT/opencv/build/lib/"libopencv_core" "$ROOT/frvt/1N/lib/"
     ```
+   
+10. We move to frvt/1N
+
+   ```sh
+   cd "$ROOT/frvt/1N"
+   ```
 
 11. We copy the config directory into the FRVT repo:
 
-    ```sh
-    cp -r "$ROOT/config" "$ROOT/frvt/1N/"
-    ```
+   ```sh
+   cp -r "$ROOT/config" "./"
+   ```
 
-11. Finally, we move to the FRVT 1N directory and run the validation routine:
+   Optional: We disable checks if IGNORE_CHECKS is set to true
+
+   ```sh
+   if [ "$IGNORE_CHECKS" = true ]; then
+      # Use sed to comment out 'check_packages' if it is at the start of a line
+      sed -i 's/^check_os/# check_os/' "./run_validate_1N.sh"
+
+      # Use sed to comment out 'check_packages' if it is at the start of a line
+      sed -i 's/^check_packages/# check_packages/' "./run_validate_1N.sh"
+      
+      # Use sed to comment out 'check_folders' if it is at the start of a line
+      sed -i 's/^check_folders/# check_folders/' "./run_validate_1N.sh"
+   fi
+   ```
+
+12. Finally, we move to the FRVT 1N directory and run the validation routine:
 
     ```sh
-    cd "$ROOT/frvt/1N"
     ./run_validate_1N.sh
     ```

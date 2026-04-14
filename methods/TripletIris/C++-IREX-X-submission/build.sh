@@ -56,7 +56,7 @@ cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch
 cmake --build . --config Release
 
 # Decode Images
-if ! test -d "$ROOT/frvt/common/images/iris/images/"; then
+if test -d "$ROOT/frvt/common/images/iris/images/"; then
   cd "$ROOT/frvt/common/images/iris"
   echo "$PASSWORD" | gpg --pinentry-mode loopback --passphrase-fd 0 --output "NIST_validation_images.tar" --decrypt NIST_validation_images.tar.gz.gpg
   tar xvf NIST_validation_images.tar
@@ -72,7 +72,7 @@ if ! test -d "$ROOT/frvt/1N/lib/"; then
   mkdir "$ROOT/frvt/1N/lib/"
 fi
 
-cp "$ROOT/build/libfrvt_1N_ndcvrl_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
+cp "$ROOT/build/libfrvt_1N_nd_cvrl_tripletiris_${FRVT_VER}.so" "$ROOT/frvt/1N/lib/"
 cp "$ROOT/libtorch/lib/"lib* "$ROOT/frvt/1N/lib/"
 cp "$ROOT/opencv/build/lib/"libopencv_imgproc* "$ROOT/frvt/1N/lib/"
 cp "$ROOT/opencv/build/lib/"libopencv_imgcodecs* "$ROOT/frvt/1N/lib/"
@@ -82,7 +82,7 @@ cp "$ROOT/opencv/build/lib/"libopencv_core* "$ROOT/frvt/1N/lib/"
 # Move to FRVT 1N directory to run validation
 cd "$ROOT/frvt/1N"
 
-# Copy config
+# Copy HDBIF config
 if ! test -d "$ROOT/frvt/1N/config/"; then
   cp -r "$ROOT/config/" .
 fi

@@ -27,7 +27,7 @@
 #include <chrono>
 #include <filesystem>
 
-#include "arcirisimplfrvt1N.h"
+#include "tripletirisimplfrvt1N.h"
 #include <ATen/ATen.h>
 #include <ATen/Parallel.h>
 #include <opencv2/opencv.hpp>
@@ -99,7 +99,7 @@ void save_image(cv::Mat irisim, at::Tensor pupil_xyr, at::Tensor iris_xyr) {
 }
 */
 
-ArcIrisImplFRVT1N::ArcIrisImplFRVT1N() {
+TripletIrisImplFRVT1N::TripletIrisImplFRVT1N() {
   resolution.push_back(0);
   resolution.push_back(0);
   norm_params_circle.push_back(0);
@@ -114,11 +114,11 @@ ArcIrisImplFRVT1N::ArcIrisImplFRVT1N() {
   torch::globalContext().setDeterministicAlgorithms(true, true);
 }
 
-ArcIrisImplFRVT1N::~ArcIrisImplFRVT1N() {
+TripletIrisImplFRVT1N::~TripletIrisImplFRVT1N() {
   //delete enable_grad;
 }
 std::shared_ptr<FRVT_1N::Interface> FRVT_1N::Interface::getImplementation() {
-  return std::make_shared<ArcIrisImplFRVT1N>();
+  return std::make_shared<TripletIrisImplFRVT1N>();
 }
 
 /* Public Interface */
@@ -141,10 +141,10 @@ std::shared_ptr<FRVT_1N::Interface> FRVT_1N::Interface::getImplementation() {
   * enrollment template used for gallery enrollment or 1:N identification
   * template used for search.
   */
-ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &configDir, FRVT::TemplateRole role) {
+ReturnStatus TripletIrisImplFRVT1N::initializeTemplateCreation(const std::string &configDir, FRVT::TemplateRole role) {
   if (init == true) {
     //////////cerr << "Already initialized, skipping..." << endl;
-    return ReturnStatus(ReturnCode::Success, "Already Initialized");
+    return ReturnStatus(ReturnCode::Success);
   }
   
   
@@ -161,7 +161,7 @@ ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &co
     vector_model = torch::jit::load(vector_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     ////////////cerr << "error loading the mask model\n";
-    return ReturnStatus(ReturnCode::ConfigError, "Error loading arciris model");
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading the tripletiris model");
   }
   vector_model.eval();
 
@@ -171,7 +171,7 @@ ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &co
     circle_model = torch::jit::load(circle_param_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     ////////////cerr << "error loading the circle model\n";
-    return ReturnStatus(ReturnCode::ConfigError, "Error loading circle detection model");
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading the circle detection model");
   }
   circle_model.eval();
 
@@ -181,7 +181,7 @@ ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &co
     mask_model = torch::jit::load(mask_model_path, torch::kCPU);
   } catch (const c10::Error &e) {
     ////////////cerr << "error loading the circle model\n";
-    return ReturnStatus(ReturnCode::ConfigError, "Error loading mask detection model");
+    return ReturnStatus(ReturnCode::ConfigError, "Error loading the mask detection model");
   }
   mask_model.eval();
 
@@ -207,7 +207,7 @@ ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &co
   return ReturnStatus(ReturnCode::Success);
 }
 
-ReturnStatus ArcIrisImplFRVT1N::createFaceTemplate(
+ReturnStatus TripletIrisImplFRVT1N::createFaceTemplate(
     const std::vector<FRVT::Image> &faces,
     FRVT::TemplateRole role,
     std::vector<uint8_t> &templ,
@@ -216,7 +216,7 @@ ReturnStatus ArcIrisImplFRVT1N::createFaceTemplate(
   return ReturnStatus(ReturnCode::NotImplemented);
 }
 
-ReturnStatus ArcIrisImplFRVT1N::createFaceTemplate(
+ReturnStatus TripletIrisImplFRVT1N::createFaceTemplate(
     const FRVT::Image &image,
     FRVT::TemplateRole role,
     std::vector<std::vector<uint8_t>> &templs,
@@ -264,7 +264,7 @@ ReturnStatus ArcIrisImplFRVT1N::createFaceTemplate(
 
 int global_index = 0;
 
-FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
+FRVT::ReturnStatus TripletIrisImplFRVT1N::createIrisTemplate(
     const std::vector<FRVT::Image> &irises,
     FRVT::TemplateRole role,
     std::vector<uint8_t> &templ,
@@ -318,26 +318,22 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     if (pr <= min_pupil_radius) {
       ////////////cerr << "The pupil radius is too small." << endl;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil radius is too small");
-      //continue;
     }
 
     if (ir <= min_iris_radius) {
       ////////////cerr << "The iris radius is too small." << endl;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Iris radius is too small");
-      //continue;
     }
 
     double alpha = pr / ir;
-    if (alpha < 0.1 || alpha > 0.75) {
+    if (alpha <= 0.1 || alpha >= 0.75) {
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil-to-iris ratio doesn't fall in the valid range i.e., alpha < 0.1 or alpha > 0.75");
-      //continue;
     }
 
     double center_dist = sqrt( pow((px - ix), 2) + pow((py - iy), 2) );
     //cerr << "center dist: " << center_dist << endl;
     if (double(center_dist / ir) > 0.5) {
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil and iris centers are too far apart, more than half of the iris radius.");
-      //continue;
     }
 
     //cerr << ix << " " << iy << " " << ir << " " << px << " " << py << " " << pr << " " << M_PI * ir * ir << endl;
@@ -364,9 +360,8 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     //cerr << "mask ones size: " << mask_ones.sizes() << "mask ones sum: " << mask_ones.sum().item<double>() << "mask ones inside iris sum: " << mask_ones_inside_iris.sum().item<double>() << endl;
     double mask_ratio = (mask_ones_inside_iris.sum().item<double>() / (double)(M_PI * ir * ir));
     //cerr << "mask ratio: " << mask_ratio << endl;
-    if (mask_ratio <= 0.15) {
+    if (mask_ratio < 0.15) {
       return ReturnStatus(ReturnCode::TemplateCreationError, "Detected mask is too small.");
-      //continue;
     }
 
     //cerr << "circApprox worked!" << endl;
@@ -437,7 +432,7 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
   return ReturnStatus(ReturnCode::Success);
 }
 
-FRVT::ReturnStatus ArcIrisImplFRVT1N::createFaceAndIrisTemplate(
+FRVT::ReturnStatus TripletIrisImplFRVT1N::createFaceAndIrisTemplate(
     const std::vector<FRVT::Image> &facesIrises, FRVT::TemplateRole role, std::vector<uint8_t> &templ
 ) {
   return ReturnStatus(ReturnCode::NotImplemented);
@@ -490,7 +485,7 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createFaceAndIrisTemplate(
   * @param[in] galleryType
   * The composition of the gallery as enumerated by GalleryType.
   */
-ReturnStatus ArcIrisImplFRVT1N::finalizeEnrollment(
+ReturnStatus TripletIrisImplFRVT1N::finalizeEnrollment(
     const std::string &configDir,
     const std::string &enrollmentDir,
     const std::string &edbName,
@@ -523,7 +518,7 @@ ReturnStatus ArcIrisImplFRVT1N::finalizeEnrollment(
   * @param[in] enrollmentDir
   * The read-only top-level directory in which enrollment data was placed.
   */
-ReturnStatus ArcIrisImplFRVT1N::initializeIdentification(const std::string &configDir, const std::string &enrollmentDir) {
+ReturnStatus TripletIrisImplFRVT1N::initializeIdentification(const std::string &configDir, const std::string &enrollmentDir) {
   ////////////cerr << "Initializing Identification: "<< endl;
   
   torch::AutoGradMode enable_grad(false);
@@ -569,7 +564,7 @@ ReturnStatus ArcIrisImplFRVT1N::initializeIdentification(const std::string &conf
 }
 
 FRVT::ReturnStatus
-ArcIrisImplFRVT1N::insertEnrollment(const uint32_t id, const std::vector<uint8_t> &tmplData){
+TripletIrisImplFRVT1N::insertEnrollment(const uint32_t id, const std::vector<uint8_t> &tmplData){
   PrepDatabaseEntry templateIris;
   templateIris.id = id;
 
@@ -586,7 +581,7 @@ ArcIrisImplFRVT1N::insertEnrollment(const uint32_t id, const std::vector<uint8_t
 }
 
 std::string
-ArcIrisImplFRVT1N::getConfigValue(const std::string& key){
+TripletIrisImplFRVT1N::getConfigValue(const std::string& key){
   if (this->cfg.find(key) == this->cfg.end()){
     return "";
   }
@@ -621,7 +616,7 @@ ArcIrisImplFRVT1N::getConfigValue(const std::string& key){
   * shall appear in descending order of similarity score - i.e. most similar
   * entries appear first.
   */
-ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
+ReturnStatus TripletIrisImplFRVT1N::identifyTemplate(
     const std::vector<uint8_t> &idTemplate,
     const uint32_t candidateListLength,
     std::vector<FRVT_1N::Candidate> &candidateList
@@ -634,7 +629,7 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
   
   if (idTemplate.size() == 0) {
     //////////////////cerr << "Template doesn't contain matchable data" << endl;
-    return ReturnStatus(ReturnCode::VerifTemplateError, "Template size zero");
+    return ReturnStatus(ReturnCode::VerifTemplateError, "Template size is zero");
   }
   //cout << "Identify Template: " << endl;
 
@@ -748,15 +743,20 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
         minScore = -1.0;
       }
     }
+    //////cerr << "minScore: " << minScore << endl;
     if (minScore >= 0) {
       FRVT_1N::Candidate candidate;
+      candidate.isAssigned = true;
       candidate.templateId = templates[i].id;
       candidate.score = minScore;
-      candidate.isAssigned = true;
       all_candidates.push_back(candidate);
     }
   }
   if (all_candidates.size() == 0) {
+    //////////////////cerr << "No candidates found." << endl;
+    FRVT_1N::Candidate candidate;
+    candidate.isAssigned = false;
+    candidateList.push_back(candidate);
     return ReturnStatus(ReturnCode::VerifTemplateError, "No candidates found");
   }
 
@@ -790,7 +790,7 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
 
 /* Private Code */
 
-void ArcIrisImplFRVT1N::load_cfg(string cfg_path) {
+void TripletIrisImplFRVT1N::load_cfg(string cfg_path) {
   string line;
   ifstream fin;
   fin.open(cfg_path);
@@ -826,29 +826,75 @@ void ArcIrisImplFRVT1N::load_cfg(string cfg_path) {
 }
 
 /*
-double ArcIrisImplFRVT1N::matchCodes(vector<double> code1, vector<double> code2) {  
+double TripletIrisImplFRVT1N::matchCodes(at::Tensor code1, at::Tensor code2, at::Tensor mask1_inp, at::Tensor mask2_inp) {
+  
+  torch::AutoGradMode enable_grad(false);
+  
+  
+  int margin = (int) floor(filter_size / 2);
+  code1 = code1.to(torch::kCPU);
+  code2 = code2.to(torch::kCPU);
+  at::Tensor mask1 = mask1_inp.index({Slice(margin, -margin), Slice(None, None)}).to(torch::kCPU);
+  at::Tensor mask2 = mask2_inp.index({Slice(margin, -margin), Slice(None, None)}).to(torch::kCPU);
+
+  at::Tensor scoreC = at::zeros({num_filters, 2 * max_shift + 1});
+  for (int shift = -max_shift; shift <= max_shift; shift++) {
+    at::Tensor andMasks = at::logical_and(mask1, at::roll(mask2, shift, 1));
+    at::Tensor xorCodes = at::logical_xor(code1, at::roll(code2, shift, 2));
+    // debug code
+    std::ostringstream oss;
+    oss << "./Codes/" << getpid() << "_" <<  shift + max_shift << ".ppm";
+    
+    ifstream f(oss.str());
+    if (!f.good()) {
+      auto img_uint = xorCodes.index({0, Slice(None, None), Slice(None, None)});
+      img_uint = (img_uint * 255).toType(torch::kU8);
+  		auto img = cv::Mat(48, 512, CV_8UC1, img_uint.data_ptr());
+      cv::cvtColor(img, img, cv::COLOR_GRAY2BGR);
+      cv::imwrite(oss.str(), img);
+    }
+    // debug code end
+    vector<at::Tensor> mask_list_v;
+    for (int i = 0; i < num_filters; i++) {
+      mask_list_v.push_back(andMasks.clone().detach());
+    }
+    at::TensorList mask_list_t = at::TensorList(mask_list_v);
+    at::Tensor andMasksRep = at::stack(mask_list_t, 0);
+    at::Tensor xorCodesMasked = at::logical_and(xorCodes, andMasksRep);
+    at::Tensor score_results = (at::sum(xorCodesMasked, vector<int64_t> {1, 2}) / at::sum(andMasks));
+    scoreC.index({Slice(None, None), shift}) = score_results;
+  }
+
+  at::Tensor scoreMean = at::mean(scoreC, 0);
+  at::Tensor score = at::min(scoreMean);
+
+  return score.item<double>();
+}
+*/
+
+double TripletIrisImplFRVT1N::matchCodes(vector<double> code1, vector<double> code2) {  
+  //cerr << "match codes called!" << endl;
+  /*
+  if (filesystem::exists("/mnt/c/TripletIrisDebug/vector_after_uint8.txt")) {
+    cerr << "file exists!" << endl;
+  } else {
+    cerr << "saving file after uint8" << endl;
+    ofstream txt_file;      // pay attention here! ofstream
+    txt_file.open("/mnt/c/TripletIrisDebug/vector_after_uint8.txt");
+    for (double num : code1) {
+      txt_file << std::setprecision(std::numeric_limits<double>::digits10 + 1) << num << ", ";
+    }
+    txt_file.close();
+  }
+  */
   double dist = 0.0;
   for (int i = 0; i < codeSize; i++) {
     dist += (double) pow(code1[i] - code2[i], 2);
   }
   return sqrt(dist);
 }
-*/
 
-double ArcIrisImplFRVT1N::matchCodes(vector<double> code1, vector<double> code2) {  
-  double dot = 0.0;
-  double mag1_sq = 0.0;
-  double mag2_sq = 0.0;
-  for (int i = 0; i < codeSize; i++) {
-    dot += (double) (code1[i] * code2[i]);
-    mag1_sq += (double) (code1[i] * code1[i]);
-    mag2_sq += (double) (code2[i] * code2[i]);
-  }
-  double cosine_sim = dot / (sqrt(mag1_sq) * sqrt(mag2_sq));
-  return acos(cosine_sim);
-}
-
-cv::Mat ArcIrisImplFRVT1N::get_cv2_image(const std::shared_ptr<uint8_t> &data, uint16_t width, uint16_t height, bool isRGB) {
+cv::Mat TripletIrisImplFRVT1N::get_cv2_image(const std::shared_ptr<uint8_t> &data, uint16_t width, uint16_t height, bool isRGB) {
   int h = height;
   int w = width;
 
@@ -864,10 +910,9 @@ cv::Mat ArcIrisImplFRVT1N::get_cv2_image(const std::shared_ptr<uint8_t> &data, u
   }
 }
 
-at::Tensor ArcIrisImplFRVT1N::grid_sample(at::Tensor input, at::Tensor grid) {
+at::Tensor TripletIrisImplFRVT1N::grid_sample(at::Tensor input, at::Tensor grid) {
   
   torch::AutoGradMode enable_grad(false);
-  c10::InferenceMode guard(true);
   
   // grid: [-1, 1]
   int N = input.sizes()[0];
@@ -892,7 +937,7 @@ at::Tensor ArcIrisImplFRVT1N::grid_sample(at::Tensor input, at::Tensor grid) {
   return ret;
 }
 
-void ArcIrisImplFRVT1N::fix_image(cv::Mat &ret) {
+void TripletIrisImplFRVT1N::fix_image(cv::Mat &ret) {
   // ret.convertTo(ret, CV_32FC3, 1.0f / 255.0f);
   int w = ret.cols;
   int h = ret.rows;
@@ -917,10 +962,10 @@ void ArcIrisImplFRVT1N::fix_image(cv::Mat &ret) {
   }
 }
 
-void ArcIrisImplFRVT1N::segment_and_circApprox(cv::Mat image, map<string, at::Tensor>* seg_im) {
+void TripletIrisImplFRVT1N::segment_and_circApprox(cv::Mat image, map<string, at::Tensor>* seg_im) {
   
   torch::AutoGradMode enable_grad(false);
-  c10::InferenceMode guard(true);
+  c10::InferenceMode guard(false);
 
   //cerr << "circApprox called!" << endl;  
 
@@ -978,10 +1023,71 @@ void ArcIrisImplFRVT1N::segment_and_circApprox(cv::Mat image, map<string, at::Te
   //cerr << "circApprox worked!!" << endl;
 }
 
-void ArcIrisImplFRVT1N::cartToPol(cv::Mat image, at::Tensor pupil_xyr, at::Tensor iris_xyr, map<string, at::Tensor>* c2p_im) {
+/*
+void TripletIrisImplFRVT1N::circApprox(cv::Mat image, map<string, at::Tensor>* seg_im) {
+  
+  torch::AutoGradMode enable_grad(false);
+  
+
+  int w = image.cols;
+  int h = image.rows;
+
+  cv::resize(image, image, cv::Size(resolution[0], resolution[1]), 0, 0, 1);
+
+  double diagonal = sqrt(w * w + h * h) / 2;
+
+  at::Tensor input_tensor = torch::from_blob(image.data, { image.rows, image.cols, 1 }, at::kByte).clone().detach();
+  input_tensor = input_tensor.unsqueeze_(0);
+  input_tensor = input_tensor.permute({0, 3, 1, 2});
+  input_tensor = input_tensor.to(at::kFloat);
+  input_tensor = input_tensor.mul(1.0/255.0);
+
+
+  // Circle params
+  at::Tensor circ_input_tensor = ((input_tensor.clone().detach() - norm_params_circle[0]) / norm_params_circle[1]);
+  circ_input_tensor = circ_input_tensor.repeat({1, 3, 1, 1});
+  circ_input_tensor = circ_input_tensor.to(torch::kCPU);
+  vector<torch::jit::IValue> *inputs_circle = new vector<torch::jit::IValue>;
+  inputs_circle->push_back(circ_input_tensor);
+  at::Tensor inp_xyr_t = circle_model.forward(*inputs_circle).toTensor();
+  delete inputs_circle;
+  inp_xyr_t = inp_xyr_t.to(torch::kCPU);
+  at::Tensor inp_xyr = inp_xyr_t.squeeze();
+  inp_xyr[0] *= w;
+  inp_xyr[1] *= h;
+  inp_xyr[2] *= 0.8 * diagonal;
+  inp_xyr[3] *= w;
+  inp_xyr[4] *= h;
+  inp_xyr[5] *= diagonal;
+  
+  (*seg_im)["pupil_xyr"] = inp_xyr.clone().detach().index({Slice(None, 3)});
+  (*seg_im)["iris_xyr"] = inp_xyr.clone().detach().index({Slice(3, None)});
+}
+*/
+
+/*
+int i = 0;
+void saveCvImage(at::Tensor tensor)
+{
+    int width = tensor.sizes()[0];
+    int height = tensor.sizes()[1];
+    try
+    {
+        cv::Mat output_mat(cv::Size{ height, width }, CV_8UC3, tensor.data_ptr<uchar>());
+        cv::Mat image = output_mat.clone();
+        cv::imwrite("./samples/" + to_string(i++) + ".png", image);
+    }
+    catch (const c10::Error& e)
+    {
+        std::cout << "an error has occured : " << e.msg() << std::endl;
+    }
+}
+*/
+
+void TripletIrisImplFRVT1N::cartToPol(cv::Mat image, at::Tensor pupil_xyr, at::Tensor iris_xyr, map<string, at::Tensor>* c2p_im) {
 
   torch::AutoGradMode enable_grad(false);
-  c10::InferenceMode guard(true);
+  c10::InferenceMode guard(false);
   //cerr << "cartToPol called!" << endl;
   
   int w = image.cols;
@@ -1026,15 +1132,20 @@ void ArcIrisImplFRVT1N::cartToPol(cv::Mat image, at::Tensor pupil_xyr, at::Tenso
   image_polar = at::clamp(at::round(image_polar.index({0, 0, Slice(None, None), Slice(None, None)})), 0, 255);
 
   (*c2p_im)["image_polar"] = image_polar.clone().detach().to(torch::kU8);
+  //cerr << "cartToPol worked!" << endl;
+  //saveCvImage((*c2p_im)["image_polar"]);
 }
 
-vector<double> ArcIrisImplFRVT1N::extractCode(at::Tensor image_polar) {
+vector<double> TripletIrisImplFRVT1N::extractCode(at::Tensor image_polar) {
   
   torch::AutoGradMode enable_grad(false);
-  c10::InferenceMode guard(true);
+  c10::InferenceMode guard(false);
+  //cerr << "Extracting code..." << endl;
   
   at::Tensor image_polar_f = image_polar.to(at::kFloat).clone().detach();
-  at::Tensor image_polar_norm = ((image_polar_f / 255.0) - 0.5) / 0.5;
+  at::Tensor image_polar_mean = image_polar_f.mean();
+  at::Tensor image_polar_std = image_polar_f.std();
+  at::Tensor image_polar_norm = torch::clamp(torch::nan_to_num(((image_polar_f - image_polar_mean) / image_polar_std), 4.0, 4.0, -4.0), -4.0, 4.0);
   at::Tensor vector_input_tensor = image_polar_norm.repeat({1, 3, 1, 1});
   vector_input_tensor = vector_input_tensor.to(torch::kCPU);
   at::Tensor code_t = vector_model.forward({vector_input_tensor}).toTensor().flatten().clone().detach().to(at::kDouble);
@@ -1045,10 +1156,25 @@ vector<double> ArcIrisImplFRVT1N::extractCode(at::Tensor image_polar) {
   for (int i = 0; i < code_t.sizes()[0]; i++){
     code.push_back(code_t[i].item<double>());
   }
+  //double* codePtr = (double*) code_t.data_ptr();
+  //vector<double> code(codePtr, codePtr + codeSize);
+  /*
+  if (filesystem::exists("/mnt/c/TripletIrisDebug/vector_before_uint8.txt")) {
+    cerr << "file exists! updated" << endl;
+  } else {
+    cerr << "saving file before uint8" << endl;
+    ofstream txt_file;      // pay attention here! ofstream
+    txt_file.open("/mnt/c/TripletIrisDebug/vector_before_uint8.txt");
+    for (double num : code) {
+      txt_file << std::setprecision(std::numeric_limits<double>::digits10 + 1) << num << ", ";
+    }
+    txt_file.close();
+  }
+  */
   return code;
 }
 
-bool ArcIrisImplFRVT1N::hasEnding(const string &fullString, const string &ending) {
+bool TripletIrisImplFRVT1N::hasEnding(const string &fullString, const string &ending) {
   if (fullString.length() >= ending.length()) {
     return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
   } else {
@@ -1056,7 +1182,7 @@ bool ArcIrisImplFRVT1N::hasEnding(const string &fullString, const string &ending
   }
 }
 
-void ArcIrisImplFRVT1N::convert_uint8_to_doublevector(
+void TripletIrisImplFRVT1N::convert_uint8_to_doublevector(
     vector<FRVT::Image::IrisLR> &labels,
     vector<vector<double>> &codes,
     const vector<uint8_t> &vec
@@ -1083,7 +1209,7 @@ void ArcIrisImplFRVT1N::convert_uint8_to_doublevector(
   }
 }
 
-double ArcIrisImplFRVT1N::match(
+double TripletIrisImplFRVT1N::match(
     vector<vector<double>> codes1, vector<vector<double>> codes2
 ) {
   

@@ -1,0 +1,12 @@
+#######################################################
+# Segmentation settings
+#######################################################
+circle_model_path: "./models/resnet18-1543-0.047488-maskIoU-0.934494.pth"
+nn_model_path: "./models/convnext_tiny-znorm-best.pth"
+cuda: True
+
+#######################################################
+# Iris coding
+#######################################################
+polar_height: 64
+polar_width: 512

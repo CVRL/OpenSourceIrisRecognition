@@ -8,8 +8,8 @@
  * about its quality, reliability, or any other characteristic.
  */
 
-#ifndef HdbifImplFRVT1N_H_
-#define HdbifImplFRVT1N_H_
+#ifndef TripletIrisImplFRVT1N_H_
+#define TripletIrisImplFRVT1N_H_
 #define _USE_MATH_DEFINES
 #include <ATen/ATen.h>
 #include <iostream>
@@ -29,76 +29,57 @@ using namespace torch::indexing;
  * Declare the implementation class of the FRVT 1:N Interface
  */
 namespace FRVT_1N {
-  class HdbifImplFRVT1N : public FRVT_1N::Interface {
+  class TripletIrisImplFRVT1N : public FRVT_1N::Interface {
     private:
       struct PrepDatabaseEntry {
           string id;
-          map<FRVT::Image::IrisLR, vector<at::Tensor>> searchCodes;
-          map<FRVT::Image::IrisLR, vector<at::Tensor>> searchMasks;
+          map<FRVT::Image::IrisLR, vector<vector<double>>> searchCodes;
           PrepDatabaseEntry() {
-            vector<at::Tensor> emptyvec1;
+            vector<vector<double>> emptyvec1;
             searchCodes[FRVT::Image::IrisLR::Unspecified] = emptyvec1;
-            vector<at::Tensor> emptyvec2;
+            vector<vector<double>> emptyvec2;
             searchCodes[FRVT::Image::IrisLR::RightIris] = emptyvec2;
-            vector<at::Tensor> emptyvec3;
+            vector<vector<double>> emptyvec3;
             searchCodes[FRVT::Image::IrisLR::LeftIris] = emptyvec3;
-            vector<at::Tensor> emptyvec4;
-            searchMasks[FRVT::Image::IrisLR::Unspecified] = emptyvec4;
-            vector<at::Tensor> emptyvec5;
-            searchMasks[FRVT::Image::IrisLR::RightIris] = emptyvec5;
-            vector<at::Tensor> emptyvec6;
-            searchMasks[FRVT::Image::IrisLR::LeftIris] = emptyvec6;
           }
       };
       int debug_count = 0;
       int polar_height;
       int polar_width;
-      int filter_size;
-      int num_filters;
-      int max_shift;
-      int score_norm; // 0 for false and 1 for true
-      string fine_mask_model_path;
+      int min_pupil_radius;
+      int min_iris_radius;
       string circle_param_model_path;
-      string bsif_dir;
-      at::Tensor filter;
       vector<int> resolution;
-      map<int, int> avg_bits_by_filter_size;
-      torch::jit::script::Module mask_model;
       torch::jit::script::Module circle_model;
-      vector<double> norm_params_mask;
+      torch::jit::script::Module vector_model;
+      torch::jit::script::Module mask_model;
       vector<double> norm_params_circle;
-      at::Tensor grid_sample(at::Tensor input, at::Tensor grid, string interp_mode = "bilinear");
-
+      vector<double> norm_params_mask;
+      at::Tensor grid_sample(at::Tensor input, at::Tensor grid);
       void load_from_cfg(map<string, string> &cfg);
       void fix_image(cv::Mat &ret);
       void segment_and_circApprox(cv::Mat image, map<string, at::Tensor>* seg_im);
-      void cartToPol(cv::Mat image, at::Tensor mask, at::Tensor pupil_xyr, at::Tensor iris_xyr, map<string, at::Tensor>* c2p_im);
-      at::Tensor extractCode(at::Tensor image_polar);
-      double matchCodes(at::Tensor code1, at::Tensor code2, at::Tensor mask1_inp, at::Tensor mask2_inp);
-
+      void cartToPol(cv::Mat image, at::Tensor pupil_xyr, at::Tensor iris_xyr, map<string, at::Tensor>* c2p_im);
+      vector<double> write_uint8_to_doublevector(uint8_t* data, uint8_t size);
+      vector<double> extractCode(at::Tensor image_polar);
+      double matchCodes(vector<double> code1, vector<double> code2);
+      int codeSize;
       bool init;
-      int codeSize0;
-      int codeSize1;
-      int codeSize2;
-      int maskSize0;
-      int maskSize1;
       map<string, string> cfg;
       vector<PrepDatabaseEntry> templates;
       void load_cfg(string cfg_path);
       cv::Mat get_cv2_image(const std::shared_ptr<uint8_t> &data, uint16_t width, uint16_t height, bool isRGB);
       bool hasEnding(const string &fullString, const string &ending);
-      double
-      match(vector<at::Tensor> codes1, vector<at::Tensor> masks1, vector<at::Tensor> codes2, vector<at::Tensor> masks2);
-      void convert_uint8_to_tensorvector(
+      double match(vector<vector<double>> codes1, vector<vector<double>> codes2);
+      void convert_uint8_to_doublevector(
           vector<FRVT::Image::IrisLR> &labels,
-          vector<at::Tensor> &codes,
-          vector<at::Tensor> &masks,
+          vector<vector<double>> &codes,
           const vector<uint8_t> &vec
       );
 
     public:
-      HdbifImplFRVT1N();
-      ~HdbifImplFRVT1N() override;
+      TripletIrisImplFRVT1N();
+      ~TripletIrisImplFRVT1N() override;
 
       FRVT::ReturnStatus initializeTemplateCreation(const std::string &configDir, FRVT::TemplateRole role) override;
 
@@ -159,4 +140,4 @@ namespace FRVT_1N {
   };
 } // namespace FRVT_1N
 
-#endif /* HdbifImplFRVT1N_H_ */
+#endif /* TripletIrisImplFRVT1N_H_ */

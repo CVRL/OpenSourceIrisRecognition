@@ -64,11 +64,6 @@ mkdir build && cd build
 cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch/" -DOpenCV_DIR="$ROOT/opencv/build/" -DORTOOLS_ROOT="$ROOT/or-tools/" -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 
-# Allow override of the checked OS Version
-if test -n "$FRVT_OS_VER"; then
-   sed -i "s/20.04.3/$FRVT_OS_VER/g"  "$FRVT_DIR/common/scripts/utils.sh"
-fi
-
 # Decode Images
 if ! test -d "$ROOT/frvt/common/images/iris/images/"; then
   cd "$ROOT/frvt/common/images/iris"
@@ -99,6 +94,18 @@ cd "$ROOT/frvt/1N"
 # Copy HDBIF config
 if ! test -d "$ROOT/frvt/1N/config/"; then
   cp -r "$ROOT/config/" .
+fi
+
+# Remove Checks if needed
+if [ "$IGNORE_CHECKS" = true ]; then
+  # Use sed to comment out 'check_packages' if it is at the start of a line
+  sed -i 's/^check_os/# check_os/' "./run_validate_1N.sh"
+
+  # Use sed to comment out 'check_packages' if it is at the start of a line
+  sed -i 's/^check_packages/# check_packages/' "./run_validate_1N.sh"
+  
+  # Use sed to comment out 'check_folders' if it is at the start of a line
+  sed -i 's/^check_folders/# check_folders/' "./run_validate_1N.sh"
 fi
 
 # Run Validation
