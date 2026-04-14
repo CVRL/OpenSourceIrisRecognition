@@ -22,12 +22,12 @@ IREX requires any library submitted to have a version number for each submission
 
 This library version is the current version for your submission, e.g. if you are submitting it for the first time then, you should set the version number as 000 and therefore, you should run 'export FRVT_VER=000'. 
 
-To run our segmentation models we need (a) the model weights and (b) to set the parameters for our iris recognition model we need the appropriate config file (should be named 'cfg.yaml') inside a directory named 'config' in our library source directory. You can download the zip file containing this 'config' directory from [config-directory-zip](https://notredame.box.com/shared/static/lo8ilx79rxc3us5sfnf1e3fqjwc3zq2v.zip).
+To run our segmentation models we need (a) the model weights and (b) to set the parameters for our iris recognition model we need the appropriate config file (should be named 'cfg.yaml') inside a directory named 'config' in our library source directory. You can download the zip file containing this 'config' directory from [config-directory-zip](https://notredame.box.com/shared/static/8iojw5c28iogj2bkfbtelyxq4ev25lsk.zip).
 
 Extract the downloaded zip file and copy the 'config' folder into the corresponding library source directory you want to compile ('C++-IREX-X-submission').
 
   ```sh
-  wget -O config.zip https://notredame.box.com/shared/static/lo8ilx79rxc3us5sfnf1e3fqjwc3zq2v.zip
+  wget -O config.zip https://notredame.box.com/shared/static/8iojw5c28iogj2bkfbtelyxq4ev25lsk.zip
   unzip config.zip
   cp -r config C++-IREX-X-submission/
   rm -r config.zip config
