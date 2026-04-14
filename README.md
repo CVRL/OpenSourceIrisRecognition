@@ -7,7 +7,7 @@
 	* [Equivalence of C++ / Python / Matlab implementations](#summary-equivalence)
 * [Iris encoding methods](#methods)
 	* [ArcIris: ResNet trained with ArcFace loss](#methods-ArcIris)
-	* [TripletNN: ConvNeXt-tiny trained with batch-hard triplet mining loss](#methods-TripletNN)
+	* [TripletIris: ConvNeXt-tiny trained with batch-hard triplet mining loss](#methods-TripletIris)
 	* [HDBIF: Human-Driven Binary Image Features](#methods-HDBIF)
 	* [CRYPTS: Human-Interpretable Features](#methods-CRYPTS)
 * [Auxiliary tools](#auxiliary)
@@ -66,11 +66,11 @@ ArcIris was trained using ArcFace loss, which optimizes feature embeddings on a 
 
 
 
-<a name="methods-TripletNN"/></a>
-### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletNN)
+<a name="methods-TripletIris"/></a>
+### ConvNeXt-tiny neural network trained with batch-hard triplet mining (TripletIris)
 
-- [x] [Python codes](methods/TripletNN/Python)
-- [x] [C++ (IREX X) codes](methods/TripletNN/C++-IREX-X-submission)
+- [x] [Python codes](methods/TripletIris/Python)
+- [x] [C++ (IREX X) codes](methods/TripletIris/C++-IREX-X-submission)
 - [x] ND [IREX X](https://pages.nist.gov/IREX10/) submission: `ndcvrl_001` (2024-11-19)
 
 The encoding model used here is the smallest version of ConvNeXt (dubbed ConvNeXt-tiny) trained with batch-hard triplet mining loss on polar-normalized iris images. We use ConvNeXt-tiny due to timing constraints enforced by NIST.
@@ -205,7 +205,7 @@ This GitHub repository:
 }
 ```
 
-A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and TripletNN is planned to be submitted for review and to ArXiv soon.
+A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and TripletIris is planned to be submitted for review and to ArXiv soon.
 
 
 <a name="acknowledgments"/></a>

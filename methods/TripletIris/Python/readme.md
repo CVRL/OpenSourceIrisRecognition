@@ -17,7 +17,7 @@ conda create -n <environment-name> --file minimal_environment.yml
 
 ## Execution 
 
-1. Run / analyze `tripletnn.py`, which loads all images from the `data` folder, performs the segmentation, feature extraction and all-vs-all matching to demonstrate how to call various functions in the TripletNN method's pipeline.
+1. Run / analyze `tripletiris.py`, which loads all images from the `data` folder, performs the segmentation, feature extraction and all-vs-all matching to demonstrate how to call various functions in the TripletIris method's pipeline.
 2. Processed data (e.g., segmentation results, normalized images, individual binary codes corresponding to all filtering kernels) will show up in the `dataProcessed` folder.
 3. Templates will show up in the `templates` folder
 
