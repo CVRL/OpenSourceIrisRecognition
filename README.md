@@ -25,7 +25,7 @@
 <a name="summary-purpose"/></a>
 ### Purpose of this repository
 
-The primary goal of this repository is to offer open-source academic iris recognition methods developed in the [Computer Vision Research Laboratory](https://cvrl.nd.edu) at the [Univesity of Notre Dame, IN, USA](https://nd.edu). 
+The primary goal of this repository is to offer open-source academic iris recognition methods developed in the [Computer Vision Research Laboratory](https://cvrl.nd.edu) at the [University of Notre Dame, IN, USA](https://nd.edu). 
 
 In addition to Python and/or Matlab codes of the offered methods, the repository also includes the C++ versions submitted to the [Iris Exchange (IREX) 10 Identification Track](https://pages.nist.gov/IREX10/) administered by NIST’s Biometrics Research Laboratory. The C++ versions may serve as a model, from both organizational and software engineering points of view, that helps to bring more academic groups and their contributions to the IREX table.
 
@@ -154,13 +154,13 @@ The crypt masks found serve as the iris template in this method. The crypt masks
 - [x] [Python and C++ (IREX X) codes](methods/) are already included into iris encoding codes
 - [ ] Used in ND [IREX X](https://pages.nist.gov/IREX10/) submissions: `ndcvrl_002` (2025-05-12), `ndcvrl_001` (2024-11-19)
 
-The iris segmentation compises two models. The first model does a classical pixel-wise estimation of the iris mask marking those pixels, which correspond to the iris texture (that is, are not occluded by eyelids, eyelashes or various deformations such as deformed/dried cornea in case of post-mortem samples). The segmentation model architecture is based on Unet++ with shared atrous residual blocks, and is illustrated below. The second model is a simple regressor estimating the circular approximations of the iris inner and outer iris boundaries.
+The iris segmentation comprises two models. The first model does a classical pixel-wise estimation of the iris mask, marking those pixels that correspond to the iris texture (that is, are not occluded by eyelids, eyelashes or various deformations such as deformed/dried cornea in case of post-mortem samples). The segmentation model architecture is based on Unet++ with shared atrous residual blocks, and is illustrated below. The second model is a simple regressor estimating the circular approximations of the inner and outer iris boundaries.
 
 <div style="text-align: center;">
 <img src="assets/nestedsharedatrousresunet.svg" alt="nestedsharedatrousresunet" width="800">
 </div>
 
-To train the pixel-wise  segmentation model, we utilized a set of iris images with their corresponding ground truth masks, sampled from a large corpus of publicly-available datasets: i) BioSec, ii) BATH, iii) ND-Iris-0405, iv) CASIA-V4-Iris-Interval, v) UBIRIS v2, vi) Warsaw-BioBase-Disease-Iris v2.1, and vii) Warsaw-BioBase-Post-Mortem-Iris v2.0. 
+To train the pixel-wise  segmentation model, we utilized a set of iris images with their corresponding ground truth masks, sampled from a large corpus of publicly available datasets: i) BioSec, ii) BATH, iii) ND-Iris-0405, iv) CASIA-V4-Iris-Interval, v) UBIRIS v2, vi) Warsaw-BioBase-Disease-Iris v2.1, and vii) Warsaw-BioBase-Post-Mortem-Iris v2.0. 
 
 To train the model estimating the circular approximations of the iris boundaries, we utilize the Open Eye Dataset (OpenEDS). We excluded images where the iris was significantly off-center, carried out Hough transform to get the ground truth pupil and iris circle parameters, and utilized these samples to train our circle parameter estimation model.
 
@@ -222,14 +222,14 @@ A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS and Tri
 
 <a name="license"/></a>
 ## License
-This is a research open-source software. You are free to use it in your research projects upon citing the sources as indicated in the [Citations](#citations) section. Please discuss individual licensing options if you want to use this software for commercial purposes, or to create and distribute closed source versions.
+This is an open-source research software. You are free to use it in your research projects upon citing the sources as indicated in the [Citations](#citations) section. Please discuss individual licensing options if you want to use this software for commercial purposes or to create and distribute closed-source versions.
 
 
 
 <a name="other"/></a>
 ## Other open-source iris recognition-related repositories
 
-This repository makes an attempt to list all available open source iris recognition algorithms offered by other teams. If you know a repository that should be included, but is not listed here, please open a pull request.
+This repository makes an attempt to list all available open-source iris recognition algorithms offered by other teams. If you know a repository that should be included, but is not listed here, please open a pull request.
 
 ### OpenAI / WorldCoin IRIS: Iris Recognition Inference System ###
 
