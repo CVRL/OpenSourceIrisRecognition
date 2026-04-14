@@ -134,9 +134,9 @@ Here's an overall description of everything that is done by the script file prov
     ```
 
 10. Move to frvt/1N
-   ```sh
-   cd "$ROOT/frvt/1N"
-   ```
+    ```sh
+    cd "$ROOT/frvt/1N"
+    ```
 
 11. We copy the config directory into the FRVT repo:
 
@@ -148,18 +148,18 @@ Here's an overall description of everything that is done by the script file prov
 
    Optional: If you have an Ubuntu version different from 24.04.3, you can still run the validation routine by disabling checks setting IGNORE_CHECKS to true:
 
-   ```sh
-   if [ "$IGNORE_CHECKS" = true ]; then
-      # Use sed to comment out 'check_packages' if it is at the start of a line
-      sed -i 's/^check_os/# check_os/' "./run_validate_1N.sh"
+    ```sh
+    if [ "$IGNORE_CHECKS" = true ]; then
+       # Use sed to comment out 'check_packages' if it is at the start of a line
+       sed -i 's/^check_os/# check_os/' "./run_validate_1N.sh"
 
-      # Use sed to comment out 'check_packages' if it is at the start of a line
-      sed -i 's/^check_packages/# check_packages/' "./run_validate_1N.sh"
+       # Use sed to comment out 'check_packages' if it is at the start of a line
+       sed -i 's/^check_packages/# check_packages/' "./run_validate_1N.sh"
       
-      # Use sed to comment out 'check_folders' if it is at the start of a line
-      sed -i 's/^check_folders/# check_folders/' "./run_validate_1N.sh"
-   fi
-   ```
+       # Use sed to comment out 'check_folders' if it is at the start of a line
+       sed -i 's/^check_folders/# check_folders/' "./run_validate_1N.sh"
+    fi
+    ```
 
 12. Finally, we run the validation routine:
 
