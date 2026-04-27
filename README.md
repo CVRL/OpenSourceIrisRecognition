@@ -182,13 +182,9 @@ The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.or
 
 - [x] [Python codes](methods/CanthiDetector/Python)
 
-The `CornerNet` model detects left and right iris canthi using **DINOv3 features** and a lightweight regression head put on top on DINO-sourced embeddings. The figure below illustrates the architecture of the solution. It was trained on approx. 900 iris images sourced from [public Notre Dame datasets](https://cvrl.nd.edu/projects/data/), with eye canthi manually annotated by Notre Dame faculty members and students.
+The `CornerNet` model detects left and right iris canthi using **DINOv3 features** and a lightweight regression head put on top on DINO-sourced embeddings. By detecting both canthi, the image can be normalized using a simple affine rotation that aligns them horizontally. This brings the canthi onto the same line, effectively correcting the eye orientation and standardizing the iris pose before downstream processing, as illustrated below. It was trained on approx. 900 iris images sourced from [public Notre Dame datasets](https://cvrl.nd.edu/projects/data/), with eye canthi manually annotated by Notre Dame faculty members and students.
 
-<img src="assets/canthi-pipeline.png" alt="Iris Canthi Detector" width="1200"/>
-
-The model returns positions of the left and right (whichever exists) canthi. As illustrated below, those canthi can be used to align an iris image so that both corners are placed horizontally.
-
-<img src="assets/canthi-sample.png" alt="Iris Canthi Detector" width="1200"/>
+<img src="assets/cornernet_teaser.png" alt="Iris Canthi Detector" width="800"/>
 
 
 <a name="citations"/></a>
