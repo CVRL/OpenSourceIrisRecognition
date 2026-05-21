@@ -149,7 +149,7 @@ ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &co
   max_alpha = stod(cfg["MAXIMUM_ALPHA"]);
   maximum_pupil_limbus_center_shift = stod(cfg["MAXIMUM_PUPIL_LIMBUS_CENTER_SHIFT"]);
 
-  cerr << "initialization worked!" << endl;
+  //cerr << "initialization worked!" << endl;
 
   return ReturnStatus(ReturnCode::Success);
 }
