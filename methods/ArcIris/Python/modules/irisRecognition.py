@@ -55,6 +55,8 @@ class irisRecognition(object):
             ])
                     
         self.ISO_RES = (640,480)
+        self.min_pr = cfg["minimum_pupil_radius"]
+        self.min_ir = cfg["minimum_iris_radius"]
 
     # converts non-ISO images into ISO dimensions
     def fix_image(self, image):
@@ -178,6 +180,27 @@ class irisRecognition(object):
                     image_polar[i-1][j-1] = image[y-1][x-1]
 
         return image_polar
+
+    @torch.inference_mode()
+    def checkQuality(self, pxyr, ixyr):
+        px, py, pr = pxyr
+        ix, iy, ir = ixyr
+        if pr < self.min_pr:
+            print("Quality check failed! Pupil radius too small.")
+            return False
+        if ir < self.min_ir:
+            print("Quality check failed! Iris radius too small.")
+            return False
+        alpha = pr / ir
+        if alpha < 0.1 or alpha > 0.8:
+            print("Quality check failed! Pupil-to-iris ratio doesn't fall in the valid range i.e., 0.1 <= alpha <= 0.8")
+            return False
+        center_dist = math.sqrt( (px - ix)**2 + (py - iy)**2 )
+        if center_dist / ir > 0.5:
+            print("Quality check failed! Pupil and iris centers are too far apart, more than half of the iris radius.")
+            return False
+        return True
+
 
     @torch.inference_mode()
     def extractVector(self, polar):

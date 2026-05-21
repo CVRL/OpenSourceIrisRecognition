@@ -41,64 +41,6 @@ using namespace std::chrono_literals;
 using namespace FRVT;
 using namespace FRVT_1N;
 
-/*
-int global_image_count = 0;
-
-cv::Mat get_image_from_tensor(at::Tensor tensor) {
-    tensor = tensor.detach();
-    tensor = tensor.clamp(0.0, 255.0).to(torch::kU8);
-    int64_t height = tensor.size(0);
-    int64_t width = tensor.size(1);
-    auto img = cv::Mat(height, width, CV_8UC1, tensor.data_ptr());
-    cv::cvtColor(img, img, cv::COLOR_GRAY2BGR, 3);
-    return img;
-}
-
-void save_polar_mask(at::Tensor mask_polar) {
-  cv::Mat mask_rgb_cv2 = get_image_from_tensor(mask_polar);
-  std::stringstream ss;
-  ss << std::this_thread::get_id();
-  cv::imwrite("/hd2/masks_polar/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", mask_rgb_cv2);
-}
-
-void save_polar_image(at::Tensor image_polar) {
-  cv::Mat image_rgb_cv2 = get_image_from_tensor(image_polar);
-  std::stringstream ss;
-  ss << std::this_thread::get_id();
-  cv::imwrite("/hd2/images_polar/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", image_rgb_cv2);
-
-}
-
-void save_mask(at::Tensor mask) {
-  cv::Mat mask_rgb_cv2 = get_image_from_tensor(mask);
-  std::stringstream ss;
-  ss << std::this_thread::get_id();
-  cv::imwrite("/hd2/masks/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", mask_rgb_cv2);
-}
-
-void save_image(cv::Mat irisim, at::Tensor pupil_xyr, at::Tensor iris_xyr) {
-  cv::Mat irisim_rgb;
-  cv::cvtColor(irisim, irisim_rgb, cv::COLOR_GRAY2BGR, 3);
-    
-  int thickness = 2;
-  cv::Scalar pupil_color(255, 0, 0);
-  int px = pupil_xyr[0].item<int>();
-  int py = pupil_xyr[1].item<int>();
-  cv::Point pc(px, py);
-  int pr = pupil_xyr[2].item<int>();
-  cv::circle(irisim_rgb, pc, pr, pupil_color, thickness);
-  cv::Scalar iris_color(0, 0, 255);
-  int ix = iris_xyr[0].item<int>();
-  int iy = iris_xyr[1].item<int>();
-  cv::Point ic(px, py);
-  int ir = iris_xyr[2].item<int>();
-  cv::circle(irisim_rgb, ic, ir, iris_color, thickness);
-  std::stringstream ss;
-  ss << std::this_thread::get_id();
-  cv::imwrite("/hd2/images/" + to_string(getpid()) + "_" + ss.str() + "_" + to_string(global_image_count) + ".ppm", irisim_rgb);
-}
-*/
-
 ArcIrisImplFRVT1N::ArcIrisImplFRVT1N() {
   resolution.push_back(0);
   resolution.push_back(0);
@@ -201,8 +143,13 @@ ReturnStatus ArcIrisImplFRVT1N::initializeTemplateCreation(const std::string &co
 
   min_pupil_radius = stoi(cfg["MINIMUM_PUPIL_RADIUS"]);
   min_iris_radius = stoi(cfg["MINIMUM_IRIS_RADIUS"]);
+  min_std_dev = stod(cfg["MINIMUM_IMAGE_STD_DEV"]);
+  min_iris_mask_to_circle_ratio = stod(cfg["MINIMUM_IRIS_MASK_TO_CIRCLE_RATIO"]);
+  min_alpha = stod(cfg["MINIMUM_ALPHA"]);
+  max_alpha = stod(cfg["MAXIMUM_ALPHA"]);
+  maximum_pupil_limbus_center_shift = stod(cfg["MAXIMUM_PUPIL_LIMBUS_CENTER_SHIFT"]);
 
-  //cerr << "initialization worked!" << endl;
+  cerr << "initialization worked!" << endl;
 
   return ReturnStatus(ReturnCode::Success);
 }
@@ -271,13 +218,7 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     std::vector<FRVT::IrisAnnulus> &irisLocations
 ) {
   
-  //auto start = high_resolution_clock::now();
-
-  // //cout << "Creating Iris Template: "<< endl;
   torch::AutoGradMode enable_grad(false);
-  //cerr << "create iris template got called!" << endl;
-  
-  //////cerr << irises.size() << endl;
 
   for (int i = 0; i < irises.size(); i++) {
     const FRVT::Image &iris = irises[i];
@@ -287,25 +228,12 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     cv::Scalar mean,stddev;
     cv::meanStdDev(irisim,mean,stddev);
 
-    //cerr << "std: " << stddev.val[0] << endl;
-    if (stddev.val[0] <= 10.0) {
-        continue;
+    if (stddev.val[0] <= min_std_dev) {
+        return ReturnStatus(ReturnCode::TemplateCreationError, "Iris image contrast too low");
     }
 
-    //if(irisim.empty())
-    //{
-      //////cerr << "irisim.empty() 1" << endl;
-    //}
-
     this->fix_image(irisim);
-    //cerr << "Fix image worked!" << endl;
-
-    //if(irisim.empty())
-    //{
-      //////cerr << "irisim.empty() 2" << endl;
-    //}
     
-    //cerr << "Before segmentation" << endl;
     map<string, at::Tensor>* seg_im = new map<string, at::Tensor>;
     this->segment_and_circApprox(irisim.clone(), seg_im);
     double ix = (*seg_im)["iris_xyr"].index({0}).item<double>();
@@ -314,33 +242,34 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     double px = (*seg_im)["pupil_xyr"].index({0}).item<double>();
     double py = (*seg_im)["pupil_xyr"].index({1}).item<double>();
     double pr = (*seg_im)["pupil_xyr"].index({2}).item<double>();
+    
+    if (ir <= pr) {
+      delete seg_im;
+      return ReturnStatus(ReturnCode::TemplateCreationError, "Iris radius smaller than pupil radius");        
+    }
 
     if (pr <= min_pupil_radius) {
-      ////////////cerr << "The pupil radius is too small." << endl;
+      delete seg_im;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil radius is too small");
-      //continue;
     }
 
     if (ir <= min_iris_radius) {
-      ////////////cerr << "The iris radius is too small." << endl;
+      delete seg_im;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Iris radius is too small");
-      //continue;
     }
 
     double alpha = pr / ir;
-    if (alpha < 0.1 || alpha > 0.75) {
+    if (alpha < min_alpha || alpha > max_alpha) {
+      delete seg_im;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil-to-iris ratio doesn't fall in the valid range i.e., alpha < 0.1 or alpha > 0.75");
-      //continue;
     }
 
     double center_dist = sqrt( pow((px - ix), 2) + pow((py - iy), 2) );
-    //cerr << "center dist: " << center_dist << endl;
-    if (double(center_dist / ir) > 0.5) {
+    
+    if (double(center_dist / ir) >= maximum_pupil_limbus_center_shift) {
+      delete seg_im;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil and iris centers are too far apart, more than half of the iris radius.");
-      //continue;
     }
-
-    //cerr << ix << " " << iy << " " << ir << " " << px << " " << py << " " << pr << " " << M_PI * ir * ir << endl;
 
     at::Tensor mask = (*seg_im)["mask"].clone().detach();
     at::Tensor mask_ones = at::where(mask > 127.5, 1.0, 0.0);
@@ -361,58 +290,32 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
 
     at::Tensor mask_ones_inside_iris = mask_ones * iris_mask;  
 
-    //cerr << "mask ones size: " << mask_ones.sizes() << "mask ones sum: " << mask_ones.sum().item<double>() << "mask ones inside iris sum: " << mask_ones_inside_iris.sum().item<double>() << endl;
+   
     double mask_ratio = (mask_ones_inside_iris.sum().item<double>() / (double)(M_PI * ir * ir));
-    //cerr << "mask ratio: " << mask_ratio << endl;
-    if (mask_ratio <= 0.15) {
+   
+    if (mask_ratio <= min_iris_mask_to_circle_ratio) {
+      delete seg_im;
       return ReturnStatus(ReturnCode::TemplateCreationError, "Detected mask is too small.");
-      //continue;
     }
-
-    //cerr << "circApprox worked!" << endl;
-
-    /*
+    
     if (irisLocations.size() > i){
-      if (irisLocations[i].limbusCenterX != 0) {
+      if (irisLocations[i].limbusCenterX > 0) {
           (*seg_im)["iris_xyr"].index({0}) = (double)irisLocations[i].limbusCenterX;
-      }else{
-        irisLocations[i].limbusCenterX = (uint16_t) static_cast<unsigned int>((*seg_im)["iris_xyr"][0].item<double>() + 0.5);
       }
 
-      if (irisLocations[i].limbusCenterY != 0) {
+      if (irisLocations[i].limbusCenterY > 0) {
           (*seg_im)["iris_xyr"].index({1}) = (double)irisLocations[i].limbusCenterY;
-      }else{
-        irisLocations[i].limbusCenterY = (uint16_t) static_cast<unsigned int>((*seg_im)["iris_xyr"][1].item<double>() + 0.5);
       }
 
-      if (irisLocations[i].limbusRadius != 0) {
+      if (irisLocations[i].limbusRadius > 0) {
           (*seg_im)["iris_xyr"].index({2}) = (double)irisLocations[i].limbusRadius;
-      }else{
-        irisLocations[i].limbusRadius = (uint16_t) static_cast<unsigned int>((*seg_im)["iris_xyr"][2].item<double>() + 0.5);
-      }
-
-      if (irisLocations[i].pupilRadius != 0) {
-          (*seg_im)["pupil_xyr"].index({2}) = (double)irisLocations[i].pupilRadius; 
-      }else{
-        irisLocations[i].pupilRadius = (uint16_t) static_cast<unsigned int>((*seg_im)["pupil_xyr"][2].item<double>() + 0.5);
       }
     }   
-    */ 
-
-    //cerr << "Before cartToPol" << endl;
 
     map<string, at::Tensor>* c2p_im = new map<string, at::Tensor>;
     this->cartToPol(irisim.clone(), (*seg_im)["pupil_xyr"].clone().detach(), (*seg_im)["iris_xyr"].clone().detach(), c2p_im);
-    //at::Tensor image_polar = at::clamp((*c2p_im)["image_polar"].clone().detach(), 0, 255).to(torch::kU8);
-    //cv::Mat image_polar_cv2(cv::Size(image_polar.sizes()[3], image_polar.sizes()[2]), CV_8UC1, image_polar.data_ptr());
-
-    //cv::imwrite("./samples/" + to_string(global_index++) + "_" + to_string(i) + ".ppm", image_polar_cv2);
-
-    //cerr << "everything before code extraction worked!" << endl;
 
     vector<double> code = this->extractCode((*c2p_im)["image_polar"].clone().detach());
-    
-    //////cerr << code.size() << endl; 
 
     templ.push_back((uint8_t) iris.irisLR);
     uint8_t* codeBegin = reinterpret_cast<uint8_t*>(&code[0]);
@@ -423,11 +326,6 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     delete c2p_im;
   }
   
-  //auto stop = high_resolution_clock::now();
-  //auto duration = duration_cast<microseconds>(stop - start);
-  
-  //ofstream timeLog("creation_times.txt", ios::app);
-  //timeLog << duration.count() << endl;
   
   if (templ.size() == 0) {
     // //cout << "No templates created." << endl;
@@ -629,9 +527,6 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
 
   torch::AutoGradMode enable_grad(false);
   
-  
-  //auto start = high_resolution_clock::now();
-  
   if (idTemplate.size() == 0) {
     //////////////////cerr << "Template doesn't contain matchable data" << endl;
     return ReturnStatus(ReturnCode::VerifTemplateError, "Template size zero");
@@ -658,12 +553,16 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
   vector<FRVT_1N::Candidate> all_candidates;
 
   for (int i = 0; i < templates.size(); i++) {
-    double scoreU = -1.0;
-    double scoreL = -1.0;
-    double scoreR = -1.0;
-    double scoreU1 = -1.0;
-    double scoreU2 = -1.0;
-    double minScore = -1.0;
+    double scoreU = M_PI + 0.1;
+    double scoreL = M_PI + 0.1;
+    double scoreR = M_PI + 0.1;
+    double scoreUL = M_PI + 0.1;
+    double scoreUR = M_PI + 0.1;
+    double scoreULR = M_PI + 0.1;
+    double scoreLU = M_PI + 0.1;
+    double scoreRU = M_PI + 0.1;
+    double scoreLRU = M_PI + 0.1;
+    double minScore = M_PI + 0.1;
 
     if (searchCodes[FRVT::Image::IrisLR::Unspecified].size() > 0 &&
         templates[i].searchCodes[FRVT::Image::IrisLR::Unspecified].size() > 0) {
@@ -671,84 +570,58 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
           searchCodes[FRVT::Image::IrisLR::Unspecified],
           templates[i].searchCodes[FRVT::Image::IrisLR::Unspecified]
       );
-      if (scoreU >= 0) {
-        minScore = scoreU;
-      } else {
-        minScore = -1.0;
-      }
-
-    } else if (searchCodes[FRVT::Image::IrisLR::Unspecified].size() > 0) {
+      
+    } 
+    if (searchCodes[FRVT::Image::IrisLR::Unspecified].size() > 0) {
       if (templates[i].searchCodes[FRVT::Image::IrisLR::LeftIris].size() > 0) {
-        scoreU1 = match(
+        scoreUL = match(
             searchCodes[FRVT::Image::IrisLR::Unspecified],
             templates[i].searchCodes[FRVT::Image::IrisLR::LeftIris]
         );
       }
       if (templates[i].searchCodes[FRVT::Image::IrisLR::RightIris].size() > 0) {
-        scoreU2 = match(
+        scoreUR = match(
             searchCodes[FRVT::Image::IrisLR::Unspecified],
             templates[i].searchCodes[FRVT::Image::IrisLR::RightIris]
         );
       }
-      if (scoreU1 >= 0 && scoreU2 >= 0) {
-        minScore = min({scoreU1, scoreU2});
-      } else if ((scoreU1 < 0) && (scoreU2 >= 0)) {
-        minScore = scoreU2;
-      } else if ((scoreU2 < 0) && (scoreU1 >= 0)) {
-        minScore = scoreU1;
-      } else {
-        minScore = -1.0;
-      }
+      scoreULR = min(scoreUL, scoreUR);
 
-    } else if (templates[i].searchCodes[FRVT::Image::IrisLR::Unspecified].size() > 0) {
+    }
+    if (templates[i].searchCodes[FRVT::Image::IrisLR::Unspecified].size() > 0) {
       if (searchCodes[FRVT::Image::IrisLR::LeftIris].size() > 0) {
-        scoreU1 = match(
+        scoreLU = match(
             templates[i].searchCodes[FRVT::Image::IrisLR::Unspecified],
             searchCodes[FRVT::Image::IrisLR::LeftIris]
         );
       }
       if (searchCodes[FRVT::Image::IrisLR::RightIris].size() > 0) {
-        scoreU2 = match(
+        scoreRU = match(
             templates[i].searchCodes[FRVT::Image::IrisLR::Unspecified],
             searchCodes[FRVT::Image::IrisLR::RightIris]
         );
       }
-      if (scoreU1 >= 0 && scoreU2 >= 0) {
-        minScore = min({scoreU1, scoreU2});
-      } else if ((scoreU1 < 0) && (scoreU2 >= 0)) {
-        minScore = scoreU2;
-      } else if ((scoreU2 < 0) && (scoreU1 >= 0)) {
-        minScore = scoreU1;
-      } else {
-        minScore = -1.0;
-      }
+      scoreLRU = min(scoreLU, scoreRU);
 
-    } else {
-      if (searchCodes[FRVT::Image::IrisLR::LeftIris].size() > 0 &&
-          templates[i].searchCodes[FRVT::Image::IrisLR::LeftIris].size() > 0) {
-            scoreL = match(
-              searchCodes[FRVT::Image::IrisLR::LeftIris],
-              templates[i].searchCodes[FRVT::Image::IrisLR::LeftIris]
-            );
-      }
-      if (searchCodes[FRVT::Image::IrisLR::RightIris].size() > 0 &&
-          templates[i].searchCodes[FRVT::Image::IrisLR::RightIris].size() > 0) {
-            scoreR = match(
-              searchCodes[FRVT::Image::IrisLR::RightIris],
-              templates[i].searchCodes[FRVT::Image::IrisLR::RightIris]
-            );
-      }
-      if (scoreL >= 0 && scoreR >= 0) {
-        minScore = min({scoreL, scoreR});
-      } else if ((scoreL < 0) && (scoreR >= 0)) {
-        minScore = scoreR;
-      } else if ((scoreR < 0) && (scoreL >= 0)) {
-        minScore = scoreL;
-      } else {
-        minScore = -1.0;
-      }
+    } 
+    if (searchCodes[FRVT::Image::IrisLR::LeftIris].size() > 0 &&
+        templates[i].searchCodes[FRVT::Image::IrisLR::LeftIris].size() > 0) {
+      scoreL = match(
+        searchCodes[FRVT::Image::IrisLR::LeftIris],
+        templates[i].searchCodes[FRVT::Image::IrisLR::LeftIris]
+      );
     }
-    if (minScore >= 0) {
+    if (searchCodes[FRVT::Image::IrisLR::RightIris].size() > 0 &&
+        templates[i].searchCodes[FRVT::Image::IrisLR::RightIris].size() > 0) {
+      scoreR = match(
+        searchCodes[FRVT::Image::IrisLR::RightIris],
+        templates[i].searchCodes[FRVT::Image::IrisLR::RightIris]
+      );
+    }
+    
+    minScore = min({scoreU, scoreULR, scoreLRU, scoreL, scoreR});
+    
+    if (minScore >= 0.0 && minScore <= M_PI) {
       FRVT_1N::Candidate candidate;
       candidate.templateId = templates[i].id;
       candidate.score = minScore;
@@ -777,13 +650,6 @@ ReturnStatus ArcIrisImplFRVT1N::identifyTemplate(
       break;
     }
   }
-  
-  //auto stop = high_resolution_clock::now();
-  //auto duration = duration_cast<microseconds>(stop - start);
-  
-  //ofstream timeLog("identification_times.txt", ios::app);
-  //timeLog << duration.count() << endl;
-
   return ReturnStatus(ReturnCode::Success);
 }
 
@@ -835,16 +701,30 @@ double ArcIrisImplFRVT1N::matchCodes(vector<double> code1, vector<double> code2)
 }
 */
 
-double ArcIrisImplFRVT1N::matchCodes(vector<double> code1, vector<double> code2) {  
+double ArcIrisImplFRVT1N::matchCodes(std::vector<double> code1, std::vector<double> code2) {  
   double dot = 0.0;
   double mag1_sq = 0.0;
   double mag2_sq = 0.0;
+  
   for (int i = 0; i < codeSize; i++) {
-    dot += (double) (code1[i] * code2[i]);
-    mag1_sq += (double) (code1[i] * code1[i]);
-    mag2_sq += (double) (code2[i] * code2[i]);
+    dot += code1[i] * code2[i];
+    mag1_sq += code1[i] * code1[i];
+    mag2_sq += code2[i] * code2[i];
   }
-  double cosine_sim = dot / (sqrt(mag1_sq) * sqrt(mag2_sq));
+  
+  double denominator = sqrt(mag1_sq) * sqrt(mag2_sq);
+
+  // 1. The Epsilon Check: Check if the denominator is effectively zero
+  if (denominator < std::numeric_limits<double>::epsilon()) {
+    return M_PI + 0.1; 
+  }
+
+  double cosine_sim = dot / denominator;
+
+  // 2. The Domain Check: Protect acos from NaN errors
+  if (cosine_sim > 1.0) cosine_sim = 1.0;
+  if (cosine_sim < -1.0) cosine_sim = -1.0;
+
   return acos(cosine_sim);
 }
 
@@ -1095,8 +975,11 @@ double ArcIrisImplFRVT1N::match(
       scores.push_back(this->matchCodes(code1, code2));
     }
   }
-
-  if (scores.size() > 1) {
+  if (scores.size() == 0) {
+    return M_PI + 0.1;
+  } else if (scores.size() == 1) {
+    return scores[0];
+  } else {
     sort(scores.begin(), scores.end());
     if (scores.size() % 2 == 0) {
       int ind = int(scores.size() / 2);
@@ -1105,8 +988,5 @@ double ArcIrisImplFRVT1N::match(
       int ind = int((scores.size() - 1)/2);
       return scores[ind];
     }
-  } else {
-    return scores[0];
   }
-  return -1.0;
 }

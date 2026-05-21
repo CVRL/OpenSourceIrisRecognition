@@ -36,16 +36,18 @@ def main(cfg):
         # segmentation mask and circular approximation:
         pupil_xyr, iris_xyr = irisRec.circApprox(im)
 
-        # cartesian to polar transformation:
-        im_polar = irisRec.cartToPol_torch(im, pupil_xyr, iris_xyr)
+        if irisRec.checkQuality(pupil_xyr, iris_xyr):
 
-        # human-driven BSIF encoding:
-        vector = irisRec.extractVector(im_polar)
-        #print(code.shape)
-        vectors_list.append(vector)
+            # cartesian to polar transformation:
+            im_polar = irisRec.cartToPol_torch(im, pupil_xyr, iris_xyr)
 
-        # DEBUG: save selected processing results
-        np.savez_compressed("./templates/" + os.path.splitext(fn)[0] + "_tmpl.npz",vector)
+            # human-driven BSIF encoding:
+            vector = irisRec.extractVector(im_polar)
+            #print(code.shape)
+            vectors_list.append(vector)
+
+            # DEBUG: save selected processing results
+            np.savez_compressed("./templates/" + os.path.splitext(fn)[0] + "_tmpl.npz",vector)
 
     # Matching (all-vs-all, as an example)
     for vector1, fn1, i in zip(vectors_list, filename_list, range(len(vectors_list))):

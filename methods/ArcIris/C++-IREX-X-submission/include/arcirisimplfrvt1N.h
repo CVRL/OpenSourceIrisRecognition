@@ -48,6 +48,11 @@ namespace FRVT_1N {
       int polar_width;
       int min_pupil_radius;
       int min_iris_radius;
+      double min_std_dev;
+      double min_iris_mask_to_circle_ratio;
+      double min_alpha;
+      double max_alpha;
+      double maximum_pupil_limbus_center_shift;
       string circle_param_model_path;
       vector<int> resolution;
       torch::jit::script::Module circle_model;

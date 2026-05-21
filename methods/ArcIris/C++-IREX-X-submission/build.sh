@@ -55,6 +55,10 @@ mkdir build && cd build
 cmake -DFRVT_VER="$FRVT_VER" -DFRVT_DIR="$ROOT/frvt" -DTorch_DIR="$ROOT/libtorch/" -DOpenCV_DIR="$ROOT/opencv/build" -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . --config Release
 
+# Build the executables
+make clean
+make
+
 # Decode Images
 if ! test -d "$ROOT/frvt/common/images/iris/images/"; then
   cd "$ROOT/frvt/common/images/iris"
