@@ -271,27 +271,39 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
       return ReturnStatus(ReturnCode::TemplateCreationError, "Pupil and iris centers are too far apart, more than half of the iris radius.");
     }
 
+    // Get original mask and threshold it
     at::Tensor mask = (*seg_im)["mask"].clone().detach();
     at::Tensor mask_ones = at::where(mask > 127.5, 1.0, 0.0);
 
-    at::Tensor ys = torch::linspace(0, mask_ones.sizes()[0]-1, mask_ones.sizes()[0]);
-    at::Tensor xs = torch::linspace(0, mask_ones.sizes()[1]-1, mask_ones.sizes()[1]);
+    // Get dimensions to create a spatial coordinate grid
+    int64_t H = mask.size(-2);
+    int64_t W = mask.size(-1);
+    auto options = at::TensorOptions().dtype(at::kFloat).device(mask.device());
 
-    vector<at::Tensor> xsys;
-    xsys.push_back(xs);
-    xsys.push_back(ys);
+    auto y = at::arange(H, options);
+    auto x = at::arange(W, options);
 
-    vector<at::Tensor> XY = at::meshgrid(xsys, "xy");
-    at::Tensor X = XY[0];
-    at::Tensor Y = XY[1];
+    // Create grid (using "ij" indexing so y maps to rows, x maps to cols)
+    std::vector<at::Tensor> grid = at::meshgrid({y, x}, "ij");
+    at::Tensor grid_y = grid[0];
+    at::Tensor grid_x = grid[1];
 
-    at::Tensor dist_from_center_iris = torch::sqrt(torch::pow((X - ix), 2) + torch::pow((Y - iy), 2));
-    at::Tensor iris_mask = at::where(dist_from_center_iris <= ir, 1.0, 0.0);    
+    // Calculate squared distances to pupil and iris centers for every pixel
+    at::Tensor dist_sq_pupil = (grid_x - px).pow(2) + (grid_y - py).pow(2);
+    at::Tensor dist_sq_iris  = (grid_x - ix).pow(2) + (grid_y - iy).pow(2);
 
-    at::Tensor mask_ones_inside_iris = mask_ones * iris_mask;  
+    // Create the geometric ring mask: strictly outside pupil AND inside iris
+    at::Tensor ring_mask = (dist_sq_pupil > (pr * pr)).logical_and(dist_sq_iris <= (ir * ir));
 
-   
-    double mask_ratio = (mask_ones_inside_iris.sum().item<double>() / (double)(M_PI * ir * ir));
+    // Filter the original mask
+    // Multiply your thresholded mask by the ring mask (casted to Float to match mask_ones)
+    at::Tensor filtered_mask_ones = mask_ones * ring_mask.to(mask_ones.options());
+
+    // Calculate the final ratio using the filtered mask
+    double ring_area = ring_mask.sum().item<double>();
+    double mask_ratio = (ring_area > 0.0)
+        ? (filtered_mask_ones.sum().item<double>() / ring_area)
+        : 0.0;
    
     if (mask_ratio <= min_iris_mask_to_circle_ratio) {
       delete seg_im;
