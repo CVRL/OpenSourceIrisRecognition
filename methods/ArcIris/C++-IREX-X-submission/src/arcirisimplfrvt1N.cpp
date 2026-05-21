@@ -296,7 +296,7 @@ FRVT::ReturnStatus ArcIrisImplFRVT1N::createIrisTemplate(
     at::Tensor ring_mask = (dist_sq_pupil > (pr * pr)).logical_and(dist_sq_iris <= (ir * ir));
 
     // Filter the original mask
-    // Multiply your thresholded mask by the ring mask (casted to Float to match mask_ones)
+    // Multiply thresholded mask by the ring mask (casted to Float to match mask_ones)
     at::Tensor filtered_mask_ones = mask_ones * ring_mask.to(mask_ones.options());
 
     // Calculate the final ratio using the filtered mask
