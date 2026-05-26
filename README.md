@@ -12,7 +12,7 @@
 	* [CRYPTS: Human-Interpretable Features](#methods-CRYPTS)
 * [Auxiliary tools](#auxiliary)
 	* [Iris image segmentation](#auxiliary-SEGM)
-	* [Eye canthi detector](#auxiliary-CANTHI)
+	* [Foundational Models-Based Toolbox](#auxiliary-FM-TOOLBOX)
 * [Citations and Papers](#citations)
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
@@ -143,8 +143,6 @@ The crypt masks found serve as the iris template in this method. The crypt masks
 **Related paper:** J. Chen, F. Shen, D. Z. Chen and P. J. Flynn, "Iris Recognition Based on Human-Interpretable Features," in IEEE Transactions on Information Forensics and Security, vol. 11, no. 7, pp. 1476-1485, 2016 [[IEEEXplore]](https://ieeexplore.ieee.org/document/7422104)
 
 
-
-
 <a name="auxiliary"/></a>
 ## Auxiliary tools
 
@@ -177,15 +175,91 @@ The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.or
 **Related paper:** M. Trokielewicz, A. Czajka, P. Maciejewicz, “Post-mortem iris recognition with deep learning-based image segmentation,” Image and Vision Computing, Vol. 94 (103866), Feb. 2020 [[Elsevier]](https://www.sciencedirect.com/science/article/pii/S0262885619304597) [[ArXiv]](https://arxiv.org/abs/1901.01708)
 
 
-<a name="auxiliary-CANTHI"/></a>
-### Eye canthi detector
+<a name="auxiliary-FM-TOOLBOX"/></a>
+### Foundational Models-Based Iris Image Processing Toolbox
 
-- [x] [Python codes](methods/CanthiDetector/Python)
+- [x] [Python codes](methods/iris-fm-tools)
 
-The `CornerNet` model detects left and right iris canthi using **DINOv3 features** and a lightweight regression head put on top on DINO-sourced embeddings. By detecting both canthi, the image can be normalized using a simple affine rotation that aligns them horizontally. This brings the canthi onto the same line, effectively correcting the eye orientation and standardizing the iris pose before downstream processing, as illustrated below. It was trained on approx. 900 iris images sourced from [public Notre Dame datasets](https://cvrl.nd.edu/projects/data/), with eye canthi manually annotated by Notre Dame faculty members and students.
+A unified multi-task regression framework built on a pre-trained foundational **DINOv3 ViT-L/16** model for iris image analysis. Currently, four task-specific lightweight regression heads have been trained on top of the foundational model's embeddings to perform: 
+- `CircleNet`: circular approximations of the inner and outer **iris boundaries**,
+- `CornerNet`: lateral and medial **eye canthi detection** and eye alignment,
+- `EyelidNet`: polynomial **approximation of eyelid curves**,
+- `H8Net`: estimation of projective transformation matrix for off-axis **gaze correction**.
 
-<img src="assets/cornernet_teaser.png" alt="Iris Canthi Detector" width="800"/>
+#### CircleNet
 
+![CircleNet teaser](assets/teaser_circlenet.png)
+
+CircleNet appoximates the **inner (pupilary) and outer iris biondaries** as two concentric circles, predicting six parameters: `pupil_x, pupil_y, pupil_r, iris_x, iris_y, iris_r`. Coordinates are normalized per-axis using WH normalization (x by width, y by height, radius by width), and pupil outputs are weighted 4× in the loss to counteract the larger iris dominating the gradient. Translation augmentation (±20%, p = 0.5) is applied during training.
+
+| Feature | Meaning |
+|---|---|
+| **Outputs** | 6 floats: `pupil_x, pupil_y, pupil_r, iris_x, iris_y, iris_r` |
+| **Normalization** | WH per-axis |
+| **Image size** | Mixed-resolution (400 × 300, 320 × 240)|
+| **Checkpoint** | `/methods/iris-fm-tools/models/circlenet.pth` |
+| **Label CSV** | `/methods/iris-fm-tools/data/circle_labels.csv` |
+| **Scripts** | `/methods/iris-fm-tools/scripts/circlenet_split.sh`, `/methods/iris-fm-tools/scripts/circlenet_final.sh` |
+
+#### H8Net
+
+![H8Net teaser](assets/teaser_h8net.png)
+
+H8Net estimates an **8 degree-of-freedom homography matrix** (`[h11, h12, h13, h21, h22, h23, h31, h32]`, with `h33 = 1.0`) that models an off-axis iris capture as a simple projective transformation. The predicted homography matrix is applied directly at inference time to produce a geometrically corrected iris image.
+
+| Feature | Meaning |
+|---|---|
+| **Outputs** | 8 floats: `h11, h12, h13, h21, h22, h23, h31, h32` |
+| **Normalization** | Z-score |
+| **Image size** | 640 × 480 |
+| **Checkpoint** | `/methods/iris-fm-tools/models/h8net.pth` |
+| **Label CSV** | `/methods/iris-fm-tools/data/homography_labels.csv` |
+| **Scripts** | `/methods/iris-fm-tools/scripts/h8net_{split,loso,final}.sh` |
+
+#### CornerNet
+
+![CornerNet teaser](assets/teaser_cornernet.png)
+
+CornerNet detects the **medial and lateral canthi** (inner and outer eye corners) as two pixel coordinates `(x1, y1, x2, y2)`. At inference the predicted corners are used to compute the rotation angle for horizontal alignment of iris images. Two checkpoints are provided: one trained on live iris images, and one trained on post-mortem iris images.
+
+| Feature | Meaning |
+|---|---|
+| **Outputs** | 4 floats — `x1, y1, x2, y2` |
+| **Normalization** | WH per-axis |
+| **Image size** | 640 × 480 |
+| **Checkpoints** | `/methods/iris-fm-tools/models/cornernet_live.pth`, `models/cornernet_pmi.pth` |
+| **Label CSVs** | `/methods/iris-fm-tools/data/corner_labels_live.csv`, `data/corner_labels_pmi.csv` |
+| **Scripts** | `/methods/iris-fm-tools/scripts/cornernet_{split,loso,final}.sh` |
+
+#### EyelidNet (parabolic approximation)
+
+![EyelidNet Parabola teaser](assets/teaser_eyelidnet_parabola.png)
+
+EyelidNet (parabolic model) fits **second-degree polynomial curves** to model the location of the upper and lower eyelids, predicting six coefficients `(upper_a, upper_b, upper_c, lower_a, lower_b, lower_c)`.
+
+| Feature | Meaning |
+|---|---|
+| **Outputs** | 6 floats — `upper_a/b/c, lower_a/b/c` |
+| **Normalization** | Z-score |
+| **Image size** | 640 × 480 |
+| **Checkpoint** | `/methods/iris-fm-tools/models/eyelidnet_parabola.pth` |
+| **Label CSV** | `/methods/iris-fm-tools/data/eyelid_labels_parabola.csv` |
+| **Scripts** | `/methods/iris-fm-tools/scripts/eyelid_parabola_{split,loso,final}.sh` |
+
+#### EyelidNet (cubic approximation)
+
+![EyelidNet Cubic teaser](assets/teaser_eyelidnet_cubic.png)
+
+EyelidNet (cubic model) extends the parabolic model to **third-degree polynomials**, predicting eight coefficients `(upper_a, upper_b, upper_c, upper_d, lower_a, lower_b, lower_c, lower_d)`.
+
+| Feature | Meaning |
+|---|---|
+| **Outputs** | 8 floats — `upper_a/b/c/d, lower_a/b/c/d` |
+| **Normalization** | Z-score |
+| **Image size** | 640 × 480 |
+| **Checkpoint** | `/methods/iris-fm-tools/models/eyelidnet_cubic.pth` |
+| **Label CSV** | `/methods/iris-fm-tools/data/eyelid_labels_cubic.csv` |
+| **Scripts** | `/methods/iris-fm-tools/scripts/eyelid_cubic_{split,loso,final}.sh` |
 
 <a name="citations"/></a>
 ## Citations and Papers
