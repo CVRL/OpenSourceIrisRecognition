@@ -190,20 +190,7 @@ The `CornerNet` model detects left and right iris canthi using **DINOv3 features
 <a name="citations"/></a>
 ## Citations and Papers
 
-**[ArXiv preprint](https://arxiv.org/abs/2605.20735)**
-
-This GitHub repository:
-
-```
-@Misc{ND_OpenSourceIrisRecognition_GitHub,
-  howpublished = {\url{https://github.com/CVRL/OpenSourceIrisRecognition/}},
-  note         = {Accessed: ...},
-  title        = {{University of Notre Dame Open Source Iris Recognition Repository}},
-  authors      = {Adam Czajka and Siamul Karim Khan and Mateusz Trokielewicz and Rasel Ahmed Bhuiyan and Jozef Porubcin and Patrick J. Flynn},
-}
-```
-
-ArXiv pre-print:
+**[ArXiv preprint](https://arxiv.org/abs/2605.20735)**:
 
 ```
 @misc{khan2026loweringbarrierirexparticipation,
@@ -217,6 +204,16 @@ ArXiv pre-print:
 }
 ```
 
+This GitHub repository:
+
+```
+@Misc{ND_OpenSourceIrisRecognition_GitHub,
+  howpublished = {\url{https://github.com/CVRL/OpenSourceIrisRecognition/}},
+  note         = {Accessed: ...},
+  title        = {{University of Notre Dame Open Source Iris Recognition Repository}},
+  authors      = {Adam Czajka and Siamul Karim Khan and Mateusz Trokielewicz and Rasel Ahmed Bhuiyan and Jozef Porubcin and Patrick J. Flynn},
+}
+```
 
 <a name="acknowledgments"/></a>
 ## Acknowledgments
