@@ -178,7 +178,7 @@ The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.or
 <a name="auxiliary-FM-TOOLBOX"/></a>
 ### Foundational Models-Based Iris Image Processing Toolbox
 
-- [x] [Python codes](methods/iris-fm-tools)
+- [x] [Python codes](methods/iris-fm-tools/Python)
 
 A unified multi-task regression framework built on a pre-trained foundational **DINOv3 ViT-L/16** model for iris image analysis. Currently, four task-specific lightweight regression heads have been trained on top of the foundational model's embeddings to perform: 
 - `CircleNet`: circular approximations of the inner and outer **iris boundaries**,
