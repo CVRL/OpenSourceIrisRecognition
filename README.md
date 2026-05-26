@@ -146,7 +146,7 @@ The crypt masks found serve as the iris template in this method. The crypt masks
 
 
 <a name="auxiliary"/></a>
-## Auxliary tools
+## Auxiliary tools
 
 <a name="auxiliary-SEGM"/></a>
 ### Iris image segmentation
