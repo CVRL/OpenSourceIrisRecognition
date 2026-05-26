@@ -13,7 +13,7 @@
 * [Auxiliary tools](#auxiliary)
 	* [Iris image segmentation](#auxiliary-SEGM)
 	* [Eye canthi detector](#auxiliary-CANTHI)
-* [Citations](#citations)
+* [Citations and Papers](#citations)
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
 * [Other open-source iris recognition-related repositories](#other)
@@ -188,7 +188,9 @@ The `CornerNet` model detects left and right iris canthi using **DINOv3 features
 
 
 <a name="citations"/></a>
-## Citations
+## Citations and Papers
+
+**[ArXiv preprint](https://arxiv.org/abs/2605.20735)**
 
 This GitHub repository:
 
@@ -201,7 +203,19 @@ This GitHub repository:
 }
 ```
 
-A research paper summarizing the IREX-X submissions of the HDBIF, CRYPTS, TripletIris, and ArcIris is planned to be submitted for review and to ArXiv soon.
+ArXiv pre-print:
+
+```
+@misc{khan2026loweringbarrierirexparticipation,
+      title={Lowering the Barrier to IREX Participation: Open-Source Algorithms, Toolkit, and Benchmarking for Iris Recognition}, 
+      author={Siamul Karim Khan and Patrick J. Flynn and Adam Czajka},
+      year={2026},
+      eprint={2605.20735},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2605.20735}, 
+}
+```
 
 
 <a name="acknowledgments"/></a>
