@@ -4,8 +4,8 @@
 
 ```bash
 # 1. Clone the repository 
-git clone --recurse-submodules https://github.com/CVRL/OpenSourceIrisRecognition/methods/iris-fm-tools.git
-cd iris-fm-tools
+git clone --recurse-submodules https://github.com/CVRL/OpenSourceIrisRecognition
+cd methods/iris-fm-tools/Python
 
 # 2. Create and activate the conda environment
 conda env create -f environment.yml
