@@ -190,7 +190,7 @@ The `CornerNet` model detects left and right iris canthi using **DINOv3 features
 <a name="citations"/></a>
 ## Citations and Papers
 
-**[ArXiv preprint](https://arxiv.org/abs/2605.20735)**:
+[ArXiv preprint](https://arxiv.org/abs/2605.20735):
 
 ```
 @misc{khan2026loweringbarrierirexparticipation,
