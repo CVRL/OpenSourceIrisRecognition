@@ -12,7 +12,7 @@
 	* [CRYPTS: Human-Interpretable Features](#methods-CRYPTS)
 * [Auxiliary tools](#auxiliary)
 	* [Iris image segmentation](#auxiliary-SEGM)
-	* [Foundational Models-Based Toolbox](#auxiliary-FM-TOOLBOX)
+	* [Foundational Model-Based Toolbox](#auxiliary-FM-TOOLBOX)
 * [Citations and Papers](#citations)
 * [Acknowledgments](#acknowledgments)
 * [License](#license)
@@ -176,7 +176,7 @@ The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.or
 
 
 <a name="auxiliary-FM-TOOLBOX"/></a>
-### Foundational Models-Based Iris Image Processing Toolbox
+### Foundational Model-Based Iris Image Processing Toolbox
 
 - [x] [Python codes](methods/iris-fm-tools/Python)
 
@@ -300,7 +300,7 @@ This GitHub repository:
 
 3. The [ArcIris model](#methods-ArcIris) has been developed by [Jozef Porubcin](https://www.linkedin.com/in/jozef-p/) as part of his Master's capstone project, mentored by [Siamul Karim Khan](https://www.siamul.info) and [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/).
 
-4. The [eye canthi detector](#auxiliary-CANTHI) has been developed by [Rasel Ahmed Bhuiyan](https://scholar.google.com/citations?user=LvUO52oAAAAJ&hl=en&oi=ao) mentored by [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/).
+4. The [foundational model-based toolbox](#auxiliary-FM-TOOLBOX) has been developed by [Rasel Ahmed Bhuiyan](https://scholar.google.com/citations?user=LvUO52oAAAAJ&hl=en&oi=ao) mentored by [Adam Czajka](https://engineering.nd.edu/faculty/adam-czajka/).
 
 
 <a name="license"/></a>
