@@ -6,6 +6,7 @@ from PIL import Image
 import os
 import cv2
 import numpy as np
+import itertools
 
 def main(cfg):
 
@@ -20,7 +21,7 @@ def main(cfg):
     extensions = ["bmp", "png", "gif", "jpg", "jpeg", "tiff", "tif"]
     for ext in extensions:
         for filename in glob.glob("./data/*." + ext):
-            im = Image.fromarray(np.array(Image.open(filename).convert("RGB"))[:, :, 0], "L")
+            im = Image.open(filename).convert("RGB").split()[0]
             image_list.append(im)
             filename_list.append(os.path.basename(filename))
 
@@ -51,11 +52,10 @@ def main(cfg):
             np.savez_compressed("./templates/" + os.path.splitext(fn)[0] + "_tmpl.npz",vector)
 
     # Matching (all-vs-all, as an example)
-    for vector1, fn1, i in zip(vectors_list, filtered_filename_list, range(len(vectors_list))):
-        for vector2, fn2, j in zip(vectors_list, filtered_filename_list, range(len(vectors_list))):
-            if i < j:
-                score = irisRec.matchVectors(vector1, vector2)
-                print("{} <-> {} : {:.3f}".format(fn1,fn2,score))
+    items = list(zip(vectors_list, filtered_filename_list))
+    for (vector1, fn1), (vector2, fn2) in itertools.combinations(items, 2):
+        score = irisRec.matchVectors(vector1, vector2)
+        print(f"{fn1} <-> {fn2} : {score:.3f}")
      
     return None
 
