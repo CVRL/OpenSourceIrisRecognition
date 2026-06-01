@@ -26,6 +26,7 @@ def main(cfg):
 
     # Segmentation, normalization and encoding
     vectors_list = []
+    filtered_filename_list = []
     for im,fn in zip(image_list,filename_list):
         
         print(fn)
@@ -37,7 +38,7 @@ def main(cfg):
         pupil_xyr, iris_xyr = irisRec.circApprox(im)
 
         if irisRec.checkQuality(pupil_xyr, iris_xyr):
-
+            filtered_filename_list.append(fn)
             # cartesian to polar transformation:
             im_polar = irisRec.cartToPol_torch(im, pupil_xyr, iris_xyr)
 
@@ -50,8 +51,8 @@ def main(cfg):
             np.savez_compressed("./templates/" + os.path.splitext(fn)[0] + "_tmpl.npz",vector)
 
     # Matching (all-vs-all, as an example)
-    for vector1, fn1, i in zip(vectors_list, filename_list, range(len(vectors_list))):
-        for vector2, fn2, j in zip(vectors_list, filename_list, range(len(vectors_list))):
+    for vector1, fn1, i in zip(vectors_list, filtered_filename_list, range(len(vectors_list))):
+        for vector2, fn2, j in zip(vectors_list, filtered_filename_list, range(len(vectors_list))):
             if i < j:
                 score = irisRec.matchVectors(vector1, vector2)
                 print("{} <-> {} : {:.3f}".format(fn1,fn2,score))
