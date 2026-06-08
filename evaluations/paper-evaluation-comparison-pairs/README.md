@@ -19,7 +19,7 @@ We utilize eight distinct datasets offering a wide variety of image qualities, d
 
 ## Pair Generation Protocol
 
-To standardize our evaluations, we generated specific image pairs for comparison. The pair generation logic ensures anatomical correctness and strategically manages combinatorial explosion during imposter matching.
+To standardize our evaluations, we generated specific image pairs for comparison. The pair generation logic strategically manages combinatorial explosion during imposter matching.
 
 ### Matching Rules
 * **Laterality Strictness:** Comparisons are strictly intra-ocular. Left eyes are only ever compared to left eyes (L vs L), and right eyes are only compared to right eyes (R vs R).
