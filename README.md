@@ -268,8 +268,7 @@ EyelidNet (cubic model) extends the parabolic model to **third-degree polynomial
 
 ```
 @misc{khan2026loweringbarrierirexparticipation,
-      title={Lowering the Barrier to IREX Participation: Open-Source Algorithms,
-			 Toolkit, and Benchmarking for Iris Recognition}, 
+      title={Lowering the Barrier to IREX Participation: Open-Source Algorithms, Toolkit, and Benchmarking for Iris Recognition}, 
       author={Siamul Karim Khan and Patrick J. Flynn and Adam Czajka},
       year={2026},
       eprint={2605.20735},
