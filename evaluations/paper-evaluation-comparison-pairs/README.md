@@ -1,10 +1,10 @@
 # Iris Recognition Dataset Evaluation Pairs
 
-This repository provides the pre-generated genuine and imposter evaluation pairs used in our iris biometric research to ensure reproducibility when comparing open-source algorithms. 
+This repository provides the pre-generated genuine and imposter evaluation pairs used in our [paper](https://arxiv.org/abs/2605.20735) to ensure reproducibility when comparing open-source algorithms. 
 
 ## Datasets Overview
 
-We utilize eight distinct datasets offering a wide variety of image qualities, demographics, and sensor types as detailed in our [paper](https://arxiv.org/abs/2605.20735). *(Note: A copy of the Notre Dame datasets used in this work can be requested at the [CVRL Datasets Page](https://cvrl.nd.edu/projects/data/)).*
+We utilize eight distinct datasets offering a wide variety of image qualities, demographics, and sensor types. *(Note: A copy of the Notre Dame datasets used in this work can be requested at the [CVRL Datasets Page](https://cvrl.nd.edu/projects/data/)).*
 
 * **Q-FIRE:** Investigates the impact of image quality on recognition. Features NIR videos with intentional variations in resolution, lighting, focus, and motion blur. Samples were curated via a three-step process to ensure strict ISO compliance.
 * **Warsaw-Biobase Post-Mortem Iris v3.0 (WBPMI):** A challenging benchmark of post-mortem NIR images. Due to tissue decay, irises lose shape and texture, effectively testing algorithmic robustness against non-ISO-compliant artifacts.
