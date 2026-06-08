@@ -26,7 +26,7 @@ To standardize our evaluations, we generated specific image pairs for comparison
 
 ### Pair Types
 * **Genuine Pairs:** Formed by computing all possible combinations of images belonging to the exact same identity and the same eye type. 
-* **Imposter Pairs:** Formed by comparing images from different identities (matching the same eye type). To maintain a balanced and computationally manageable dataset size, a fixed maximum number of images (`n_sample_imposter`) is randomly sampled per identity before generating the cross-identity combinations. 
+* **Imposter Pairs:** Formed by comparing images from different identities (matching the same eye type). To maintain a balanced and computationally manageable dataset size, a fixed maximum number of images (`n_sample_imposter`) is randomly sampled per identity before generating the cross-identity combinations. This sampling was repeated every time a pair of identities was selected for comparison.
 
 ## Usage
 The generated pairs are provided as `genuine.csv` and `imposter.csv` files within their respective dataset directories. Each CSV contains two columns (`image1`, `image2`) listing the precise filenames/relative file path to be compared during evaluation. The file names are provided without an image extension.
