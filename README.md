@@ -12,6 +12,7 @@
 	* [CRYPTS: Human-Interpretable Features](#methods-CRYPTS)
 * [Auxiliary tools](#auxiliary)
 	* [Iris image segmentation](#auxiliary-SEGM)
+	* [Pupil and Iris circle estimation](#auxiliary-CIRCLES)
 	* [Foundational Model-Based Toolbox](#auxiliary-FM-TOOLBOX)
 * [Citations and Papers](#citations)
 * [Acknowledgments](#acknowledgments)
@@ -152,17 +153,35 @@ The crypt masks found serve as the iris template in this method. The crypt masks
 - [x] [Python and C++ (IREX X) codes](methods/) are already included into iris encoding codes
 - [ ] Used in ND [IREX X](https://pages.nist.gov/IREX10/) submissions: `ndcvrl_002` (2025-05-12), `ndcvrl_001` (2024-11-19)
 
-The iris segmentation comprises two models. The first model does a classical pixel-wise estimation of the iris mask, marking those pixels that correspond to the iris texture (that is, are not occluded by eyelids, eyelashes or various deformations such as deformed/dried cornea in case of post-mortem samples). The segmentation model architecture is based on Unet++ with shared atrous residual blocks, and is illustrated below. The second model is a simple regressor estimating the circular approximations of the inner and outer iris boundaries.
+This model does a classical pixel-wise estimation of the iris mask, marking those pixels that correspond to the iris texture (that is, are not occluded by eyelids, eyelashes or various deformations such as deformed/dried cornea in case of post-mortem samples). The segmentation model architecture is based on Unet++ with shared atrous residual blocks, and is illustrated below.
 
 <div style="text-align: center;">
 <img src="assets/nestedsharedatrousresunet.svg" alt="nestedsharedatrousresunet" width="800">
 </div>
 
-To train the pixel-wise  segmentation model, we utilized a set of iris images with their corresponding ground truth masks, sampled from a large corpus of publicly available datasets: i) BioSec, ii) BATH, iii) ND-Iris-0405, iv) CASIA-V4-Iris-Interval, v) UBIRIS v2, vi) Warsaw-BioBase-Disease-Iris v2.1, and vii) Warsaw-BioBase-Post-Mortem-Iris v2.0. 
+To train the pixel-wise segmentation model, we utilized a set of iris images with their corresponding ground truth masks, sampled from a large corpus of publicly available datasets: i) BioSec, ii) BATH, iii) ND-Iris-0405, iv) CASIA-V4-Iris-Interval, v) UBIRIS v2, vi) Warsaw-BioBase-Disease-Iris v2.1, and vii) Warsaw-BioBase-Post-Mortem-Iris v3.0.
 
-To train the model estimating the circular approximations of the iris boundaries, we utilize the Open Eye Dataset (OpenEDS). We excluded images where the iris was significantly off-center, carried out Hough transform to get the ground truth pupil and iris circle parameters, and utilized these samples to train our circle parameter estimation model.
+**Matlab version**
 
-Here's an illustration of segmentations found by the models on a few images from the public IREX X validation set:
+The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.org/document/7803544) architecture. It was trained on the same set of iris images with their corresponding binary masks as the Python and C++ versions.
+
+**Related paper:** M. Trokielewicz, A. Czajka, P. Maciejewicz, “Post-mortem iris recognition with deep learning-based image segmentation,” Image and Vision Computing, Vol. 94 (103866), Feb. 2020 [[Elsevier]](https://www.sciencedirect.com/science/article/pii/S0262885619304597) [[ArXiv]](https://arxiv.org/abs/1901.01708)
+
+
+<a name="auxiliary-CIRCLES"/></a>
+### Pupil and Iris circle estimation
+
+- [x] [Python and C++ (IREX X) codes](methods/) are already included into iris encoding codes
+- [x] [Estimated pupil and iris circle parameters](auxiliary_resources/pupil_iris_circle_parameters.csv)
+- [x] Used in ND [IREX X](https://pages.nist.gov/IREX10/) submissions: `ndcvrl_002` (2025-05-12), `ndcvrl_001` (2024-11-19)
+
+This model is a simple ResNet18-based regressor trained with Smooth L1 loss to estimate the circular approximations of the inner (pupil) and outer (iris) boundaries, which are used to unwrap the iris into polar coordinates via Daugman's rubber sheet model.
+
+To train this circle parameter estimation model, we utilized the Open Eye Dataset (OpenEDS) together with all seven segmentation datasets listed above (BioSec, BATH, ND-Iris-0405, CASIA-V4-Iris-Interval, UBIRIS v2, Warsaw-BioBase-Disease-Iris v2.1, and Warsaw-BioBase-Post-Mortem-Iris v3.0), after excluding OpenEDS images where the iris was significantly off-center. For this combined dataset, we used MATLAB's Hough transform implementation on the ground truth segmentation masks to estimate the pupil and iris circle parameters (verifying high overlap with the original masks and manually correcting any poor fits).
+
+So that researchers can collect these public datasets and re-train their own circle estimation models without needing MATLAB, we provide all 14,660 estimated circle parameters in [`auxiliary_resources/pupil_iris_circle_parameters.csv`](auxiliary_resources/pupil_iris_circle_parameters.csv). The file has seven columns: `dataset_image, pupil_center_x, pupil_center_y, pupil_radius, iris_center_x, iris_center_y, iris_radius`, where `dataset_image` stores `<dataset_name>/<image_name>` and the circle coordinates and radii are given in pixels (`320 × 240`).
+
+Here's an illustration of pixel-wise segmentations and iris circle boundaries found by the models on a few images from the public IREX X validation set:
 
 <div style="text-align: center;">
 <img src="assets/segm-nist-examples.jpg" alt="segm-nist-examples" width="800">
@@ -170,9 +189,7 @@ Here's an illustration of segmentations found by the models on a few images from
 
 **Matlab version**
 
-The Matlab version of the segmenter uses the [SegNet](https://ieeexplore.ieee.org/document/7803544) architecture. It was trained on the same set of iris images with their corresponding binary masks as the Python and C++ versions. Circular approximations are estimated by a Hough Transform applied to binary masks.
-
-**Related paper:** M. Trokielewicz, A. Czajka, P. Maciejewicz, “Post-mortem iris recognition with deep learning-based image segmentation,” Image and Vision Computing, Vol. 94 (103866), Feb. 2020 [[Elsevier]](https://www.sciencedirect.com/science/article/pii/S0262885619304597) [[ArXiv]](https://arxiv.org/abs/1901.01708)
+In the Matlab version, circular approximations are estimated directly by a Hough Transform applied to binary masks.
 
 
 <a name="auxiliary-FM-TOOLBOX"/></a>
